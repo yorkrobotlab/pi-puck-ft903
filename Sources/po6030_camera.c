@@ -3,7 +3,7 @@
 #include <ft900.h>
 #include "tinyprintf.h"
 
-#define PO6030_I2C_ADDR (0x6E)
+#define PO6030_I2C_ADDR (0xDC) // 7-bit address 0x6E left-shifted by 1 to work with this I2C library
 
 #define BANK_REGISTER 0x3
 #define BANK_A 0x0
