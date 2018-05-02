@@ -3939,6 +3939,9 @@ int main(void)
     gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
     gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
 
+	/* Set the I2C Master pins to channel 1 */
+	sys_i2c_swop(1);
+
     i2cm_init(I2CM_NORMAL_SPEED, 100000);
 
     // Initialise the camera hardware.
