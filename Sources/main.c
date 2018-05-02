@@ -69,7 +69,7 @@
   CAMERA_TYPE can be passed as a directive to the makefile.
  */
 #ifndef CAMERA_TYPE
-#define CAMERA_TYPE CAMERA_OV965X
+#define CAMERA_TYPE CAMERA_PO6030
 #endif // CAMERA_TYPE
 
 #if CAMERA_TYPE == CAMERA_OV5640
@@ -84,6 +84,12 @@
 #define camera_start ov965x_start
 #define camera_stop ov965x_stop
 #define camera_set ov965x_set
+#elif CAMERA_TYPE == CAMERA_PO6030
+#include "po6030_camera.h"
+#define camera_init po6030_init
+#define camera_start po6030_start
+#define camera_stop po6030_stop
+#define camera_set po6030_set
 #else
 #error unsupported camera type
 #endif
@@ -291,7 +297,7 @@
  *  The OV965X only supports uncompressed output.
  */
 //@{
-#if (CAMERA_TYPE == CAMERA_OV5640) || (CAMERA_TYPE == CAMERA_OV965X)
+#if (CAMERA_TYPE == CAMERA_OV5640) || (CAMERA_TYPE == CAMERA_OV965X) || (CAMERA_TYPE == CAMERA_PO6030)
 #define PAYLOAD_UNCOMPRESSED
 #endif
 #if CAMERA_TYPE == CAMERA_OV5640
