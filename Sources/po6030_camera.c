@@ -103,6 +103,22 @@ uint16_t po6030_init(void)
     i2c_write_byte(PO6030_I2C_ADDR, BANK_REGISTER, BANK_B); // Switch to Bank B
     i2c_write_byte(PO6030_I2C_ADDR, 0x68, 0x00); // SyncControl0 - disable Hsync and Vsync drop
 
+    ////////////////////////////////////////////////////////////////
+    // Set frame size to 960x512 to slow the frame rate to 15 fps //
+    ////////////////////////////////////////////////////////////////
+
+    int frame_width = 959;
+	int frame_height = 511;
+
+	i2c_write_byte(PO6030_I2C_ADDR, BANK_REGISTER, BANK_B); // Switch to Bank B
+
+	i2c_write_byte(PO6030_I2C_ADDR, 0x48, (frame_width >> 8) & 0xFF); // Frame width, high
+	i2c_write_byte(PO6030_I2C_ADDR, 0x49, frame_width & 0xFF); // Frame width, low
+
+	// These registers are mentioned on page 7 of data sheet, but page 26 suggests they have something to do with flicker?
+	i2c_write_byte(PO6030_I2C_ADDR, 0x29, (frame_height >> 8) & 0xFF); // Frame height, high
+	i2c_write_byte(PO6030_I2C_ADDR, 0x2A, frame_height & 0xFF); // Frame height, low
+
 	if(device_id_h == MSB(PO6030_PID) && device_id_l == LSB(PO6030_PID))
 	{
 		return ((device_id_h << 8) | device_id_l);
