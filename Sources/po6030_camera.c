@@ -1,6 +1,7 @@
 #include "po6030_camera.h"
 #include <ft900.h>
 #include "tinyprintf.h"
+#include "camera.h"
 
 #define PO6030_I2C_ADDR (0xDC) // 7-bit address 0x6E left-shifted by 1 to work with this I2C library
 
@@ -163,5 +164,18 @@ void po6030_stop(void)
 
 void po6030_set(int resolution, int frame_rate, int format)
 {
+	if(format == CAMERA_FORMAT_UNCOMPRESSED)
+		tfp_printf("Format: Uncompressed\n");
 
+	switch(resolution)
+	{
+	case CAMERA_MODE_QVGA:
+		tfp_printf("Resolution: QVGA\n");
+		break;
+	case CAMERA_MODE_VGA:
+		tfp_printf("Resolution: VGA\n");
+		break;
+	}
+
+	tfp_printf("Framerate: %d\n", frame_rate);
 }
