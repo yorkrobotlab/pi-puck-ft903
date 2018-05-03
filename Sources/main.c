@@ -3611,7 +3611,6 @@ uint8_t usbd_testing(void)
 								cam_start(sample_length);
 								camera_start();
 								wait_for_vsync();
-
 								cam_enable_interrupt();
 #ifndef USB_ENDPOINT_USE_ISOC
 								usb_alt = 1;
@@ -3955,6 +3954,7 @@ int main(void)
     {
 		/* Clock data in when VREF is low and HREF is high */
 		cam_init(cam_trigger_mode_1, cam_clock_pol_raising);
+
 		interrupt_attach(interrupt_camera, (uint8_t)interrupt_camera, cam_ISR);
 
 		interrupt_enable_globally();
