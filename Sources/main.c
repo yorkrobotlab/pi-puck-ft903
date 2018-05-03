@@ -108,7 +108,7 @@
   A bulk endpoint on the FT90x will allow multiple data packets per
   microframe and hence a higher bandwidth.
  */
-#define USB_ENDPOINT_USE_ISOC
+#undef USB_ENDPOINT_USE_ISOC
 
 /**
  @brief Include a DFU Interface in the configuration.

@@ -77,36 +77,6 @@ uint16_t po6030_init(void)
     i2c_write_byte(PO6030_I2C_ADDR, 0x1D, 0xA0); // AECenterWidth_L
     i2c_write_byte(PO6030_I2C_ADDR, 0x1F, 0xA0); // AECenterHeight_L
 
-//    //////////////////////////////////////////////////////////////////////////////////////////////
-//    // Set image output size to QVGA mode (320x240) (see table on page 61 of PO6030K data sheet) //
-//    //////////////////////////////////////////////////////////////////////////////////////////////
-//
-//    i2c_write_byte(PO6030_I2C_ADDR, BANK_REGISTER, BANK_B); // Switch to Bank B
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x51, 0x04); // Window_X1_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x53, 0x04); // Window_Y1_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x54, 0x01); // Window_X2_H
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x55, 0x43); // Window_X2_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x56, 0x00); // Window_Y2_H
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x57, 0xF3); // Window_Y2_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x61, 0x0C); // VsyncStartRow_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x63, 0xEC); // VsyncStopRow_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x80, 0x40); // Scale_X
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x81, 0x40); // Scale_Y
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x82, 0x01); // Reserved
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x68, 0x00); // SyncControl0
-//
-//    i2c_write_byte(PO6030_I2C_ADDR, BANK_REGISTER, BANK_C); // Switch to Bank C
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x11, 0x12); // AEWin_X_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x13, 0x0E); // AEWin_Y_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x14, 0x01); // AEWinWidth_H
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x15, 0x30); // AEWinWidth_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x16, 0x00); // AEWinHeight_H
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x17, 0xDF); // AEWinHeight_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x19, 0x72); // AECenterWin_X_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x1B, 0x43); // AECenterWin_Y_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x1D, 0x50); // AECenterWidth_L
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x1F, 0x50); // AECenterHeight_L
-
     //////////////////////////////////////////////////////////////////////////////
     // Set output format to YCbYCr (see table on page 67 of PO6030K data sheet) //
     //////////////////////////////////////////////////////////////////////////////
@@ -117,17 +87,6 @@ uint16_t po6030_init(void)
     i2c_write_byte(PO6030_I2C_ADDR, 0x91, 0x37); // Y contrast
     i2c_write_byte(PO6030_I2C_ADDR, 0x92, 0x10); // Y brightness
     i2c_write_byte(PO6030_I2C_ADDR, 0x93, 0xEB); // Y max = YCbCr range
-
-//    ////////////////////////////////////////////////////////////////////////////////
-//    // Set output format to YCbCr422 (see table on page 67 of PO6030K data sheet) //
-//    ////////////////////////////////////////////////////////////////////////////////
-//
-//    i2c_write_byte(PO6030_I2C_ADDR, BANK_REGISTER, BANK_B); // Switch to Bank B
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x38, 0x00); // Format = Cb Y Cr Y
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x90, 0xE0); // CS max = YCbCr range
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x91, 0x37); // Y contrast
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x92, 0x10); // Y brightness
-//    i2c_write_byte(PO6030_I2C_ADDR, 0x93, 0xEB); // Y max = YCbCr range
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Rotate the image by 180 degrees, by flipping both horizontally and vertically (see page 78 of PO6030K data sheet) //
