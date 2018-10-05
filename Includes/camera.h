@@ -50,6 +50,8 @@
 //@{
 #define CAMERA_OV5640 1
 #define CAMERA_OV965X 2
+#define CAMERA_PO6030 3
+#define CAMERA_PO8030 4
 //@}
 
 /**

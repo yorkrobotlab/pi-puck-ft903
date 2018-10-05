@@ -69,7 +69,7 @@
   CAMERA_TYPE can be passed as a directive to the makefile.
  */
 #ifndef CAMERA_TYPE
-#define CAMERA_TYPE CAMERA_PO6030
+#define CAMERA_TYPE CAMERA_PO8030
 #endif // CAMERA_TYPE
 
 #if CAMERA_TYPE == CAMERA_OV5640
@@ -90,6 +90,12 @@
 #define camera_start po6030_start
 #define camera_stop po6030_stop
 #define camera_set po6030_set
+#elif CAMERA_TYPE == CAMERA_PO8030
+#include "po8030_camera.h"
+#define camera_init po8030_init
+#define camera_start po8030_start
+#define camera_stop po8030_stop
+#define camera_set po8030_set
 #else
 #error unsupported camera type
 #endif
@@ -297,7 +303,7 @@
  *  The OV965X only supports uncompressed output.
  */
 //@{
-#if (CAMERA_TYPE == CAMERA_OV5640) || (CAMERA_TYPE == CAMERA_OV965X) || (CAMERA_TYPE == CAMERA_PO6030)
+#if (CAMERA_TYPE == CAMERA_OV5640) || (CAMERA_TYPE == CAMERA_OV965X) || (CAMERA_TYPE == CAMERA_PO6030) || (CAMERA_TYPE == CAMERA_PO8030)
 #define PAYLOAD_UNCOMPRESSED
 #endif
 #if CAMERA_TYPE == CAMERA_OV5640
@@ -3533,10 +3539,16 @@ uint8_t usbd_testing(void)
 	usb_ctx.ep0_size = USB_CONTROL_EP_SIZE;
 	//usb_ctx.ep0_cb = ep_cb;
 
+	tfp_printf("Initialising USB...\r\n");
+
 	USBD_initialise(&usb_ctx);
+
+	tfp_printf("Initialised USB.\r\n");
 
 	// Wait for connect to host.
 	while (USBD_connect() != USBD_OK);
+
+	tfp_printf("Connected to USB host.\r\n");
 
 	USBD_create_endpoint(UVC_EP_INTERRUPT, USBD_EP_INT, USBD_DIR_IN,
 			UVC_INTERRUPT_USBD_EP_SIZE, USBD_DB_OFF, NULL /*ep_cb*/);
@@ -3898,6 +3910,10 @@ int main(void)
 	BRIDGE_DEBUG_PRINTF("\r\n");
 	BRIDGE_DEBUG_PRINTF("Emulate a UVC device connected to the USB.\r\n");
 	BRIDGE_DEBUG_PRINTF("--------------------------------------------------------------------- \r\n");
+
+	BRIDGE_DEBUG_PRINTF("Hello IROS!\r\n");
+
+	BRIDGE_DEBUG_PRINTF("%s %s\r\n", __DATE__, __TIME__);
 #endif // BRIDGE_DEBUG
 
 	/* Timer A = 1ms */
@@ -3945,13 +3961,17 @@ int main(void)
     gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
 
 	/* Set the I2C Master pins to channel 1 */
-	sys_i2c_swop(1);
+//	sys_i2c_swop(1);
 
     i2cm_init(I2CM_NORMAL_SPEED, 100000);
+
+    BRIDGE_DEBUG_PRINTF("Initialising camera...\r\n");
 
     // Initialise the camera hardware.
     if (camera_init())
     {
+    	tfp_printf("Camera init success\r\n");
+
 		/* Clock data in when VREF is low and HREF is high */
 		cam_init(cam_trigger_mode_1, cam_clock_pol_raising);
 
@@ -3967,6 +3987,8 @@ int main(void)
     {
     	tfp_printf("Camera not found\n");
     }
+
+    BRIDGE_DEBUG_PRINTF("Done..\r\n");
 
 	// Wait forever...
 	for (;;);

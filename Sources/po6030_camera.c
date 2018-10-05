@@ -32,6 +32,8 @@ uint16_t po6030_init(void)
 	// Read device ID //
 	////////////////////
 
+	tfp_printf("Reading camera ID...\r\n");
+
 	i2c_write_byte(PO6030_I2C_ADDR, BANK_REGISTER, BANK_B);
 
 	uint8_t device_id_h = i2c_read_byte(PO6030_I2C_ADDR, 0x00);
