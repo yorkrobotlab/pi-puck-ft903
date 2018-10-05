@@ -73,6 +73,24 @@
 #define PO8030_REG_EXPOSURE_L 0x15
 #define PO8030_REG_SATURATION 0x2C
 
+// Formats
+#define FORMAT_CBYCRY 0x00
+#define FORMAT_CRYCBY 0x01
+#define FORMAT_YCBYCR 0x02
+#define FORMAT_YCRYCB 0x03
+#define FORMAT_RGGB 0x10
+#define FORMAT_GBRG 0x11
+#define FORMAT_GRBG 0x12
+#define FORMAT_BGGR 0x13
+#define FORMAT_RGB565 0x30
+#define FORMAT_RGB565_BYTE_SWAP 0x31
+#define FORMAT_BGR565 0x32
+#define FORMAT_BGR565_BYTE_SWAP 0x33
+#define FORMAT_RGB444 0x36
+#define FORMAT_RGB444_BYTE_SWAP 0x37
+#define FORMAT_DPC_BAYER 0x41
+#define FORMAT_YYYY 0x44
+
 static inline void i2c_write_byte(uint8_t address, uint8_t reg, uint8_t command)
 {
 	i2cm_write(address, reg, &command, 1);
@@ -141,6 +159,19 @@ uint16_t po8030_init(void)
     // Scale settings.
 	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_SCALE_X, 0x20);
 	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_SCALE_Y, 0x20);
+
+	// Format
+	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_FORMAT, FORMAT_YCBYCR);
+
+	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_SYNC_CONTROL0, 0x00);
+
+	i2c_write_byte(PO8030_I2C_ADDR, BANK_REGISTER, BANK_A);
+	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_VSYNCSTARTROW_L, 0x0A);
+
+	// Seems to cause image tearing?
+	i2c_write_byte(PO8030_I2C_ADDR, BANK_REGISTER, BANK_B);
+	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_SCALE_TH_H, 0x00);
+	i2c_write_byte(PO8030_I2C_ADDR, PO8030_REG_SCALE_TH_L, 0x0A);
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     // Set image output size to VGA mode (640x480) (see table on page 60 of PO8030K data sheet) //
