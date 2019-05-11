@@ -3900,7 +3900,7 @@ int main(void)
 
 #ifdef BRIDGE_DEBUG
 	// Open the UART using the coding required.
-	uart_open(UART0, 1, UART_DIVIDER_19200_BAUD, uart_data_bits_8, uart_parity_none, uart_stop_bits_1);
+	uart_open(UART0, 1, UART_DIVIDER_115200_BAUD, uart_data_bits_8, uart_parity_none, uart_stop_bits_1);
 
 	/* Print out a welcome message... */
 	BRIDGE_DEBUG_PRINTF("\x1B[2J" /* ANSI/VT100 - Clear the Screen */
