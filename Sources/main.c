@@ -192,7 +192,7 @@
 //@{
 // USB Bus Powered - set to 1 for self-powered or 0 for bus-powered
 #ifndef USB_SELF_POWERED
-#define USB_SELF_POWERED 0
+#define USB_SELF_POWERED 1
 #endif // USB_SELF_POWERED
 #if USB_SELF_POWERED == 1
 #define USB_CONFIG_BMATTRIBUTES_VALUE (USB_CONFIG_BMATTRIBUTES_SELF_POWERED | USB_CONFIG_BMATTRIBUTES_RESERVED_SET_TO_1)
@@ -1206,7 +1206,8 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_uvc_hs config_descriptor_uvc_hs =
 		0x01, /* configuration.bConfigurationValue */
 		0x00, /* configuration.iConfiguration */
 		USB_CONFIG_BMATTRIBUTES_VALUE, /* configuration.bmAttributes */
-		0xFA, /* configuration.bMaxPower */           // 500mA
+		//0xFA, /* configuration.bMaxPower */           // 500mA
+		0, /* configuration.bMaxPower */           // 0mA
 	},
 
 	{
@@ -1642,7 +1643,8 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_uvc_fs config_descriptor_uvc_fs =
 		0x01, /* configuration.bConfigurationValue */
 		0x00, /* configuration.iConfiguration */
 		USB_CONFIG_BMATTRIBUTES_VALUE, /* configuration.bmAttributes */
-		0xFA, /* configuration.bMaxPower */           // 500mA
+		//0xFA, /* configuration.bMaxPower */           // 500mA
+		0, /* configuration.bMaxPower */           // 0mA
 	},
 
 	{
@@ -1835,7 +1837,8 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_dfumode config_descriptor_dfumode 
 		0x01, /* configuration.bConfigurationValue */
 		0x00, /* configuration.iConfiguration */
 		USB_CONFIG_BMATTRIBUTES_VALUE, /* configuration.bmAttributes */
-		0xFA /* configuration.bMaxPower */ // 500mA
+		//0xFA /* configuration.bMaxPower */ // 500mA
+		0 /* configuration.bMaxPower */ // 0mA
 	},
 
 	// ---- INTERFACE DESCRIPTOR for DFU Interface ----
