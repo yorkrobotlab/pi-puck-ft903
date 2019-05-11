@@ -1993,6 +1993,116 @@ uint32_t millis(void)
 	return milliseconds;
 }
 
+
+
+/**
+ * I2C Slave
+ */
+
+/* i2cs_dev variables */
+volatile uint8_t *i2cs_dev_buffer;
+volatile size_t i2cs_dev_buffer_size;
+volatile uint8_t i2cs_dev_buffer_ptr;
+volatile uint8_t i2cs_dev_registers[3] =
+{
+        0,
+        0,
+        0
+};
+
+volatile uint8_t led1 = 0xFF;
+volatile uint8_t led2 = 0xFF;
+volatile uint8_t led3 = 0xFF;
+
+void update_leds(void) {
+	if (led1 != i2cs_dev_registers[0]) {
+		led1 = i2cs_dev_registers[0];
+		uint8_t led1r = !(led1 & 0x1);
+		uint8_t led1g = !(led1 & 0x2);
+		uint8_t led1b = !(led1 & 0x4);
+		gpio_write(55, led1r);
+		gpio_write(29, led1g);
+		gpio_write(45, led1b);
+//		BRIDGE_DEBUG_PRINTF("Setting LED1 to R%x G%x B%x\r\n", led1r, led1g, led1b);
+	}
+	if (led2 != i2cs_dev_registers[1]) {
+		led2 = i2cs_dev_registers[1];
+		uint8_t led2r = !(led2 & 0x1);
+		uint8_t led2g = !(led2 & 0x2);
+		uint8_t led2b = !(led2 & 0x4);
+		gpio_write(56, led2r);
+		gpio_write(57, led2g);
+		gpio_write(58, led2b);
+//		BRIDGE_DEBUG_PRINTF("Setting LED2 to R%x G%x B%x\r\n", led2r, led2g, led2b);
+	}
+	if (led3 != i2cs_dev_registers[2]) {
+		led3 = i2cs_dev_registers[2];
+		uint8_t led3r = !(led3 & 0x1);
+		uint8_t led3g = !(led3 & 0x2);
+		uint8_t led3b = !(led3 & 0x4);
+		gpio_write(52, led3r);
+		gpio_write(53, led3g);
+		gpio_write(54, led3b);
+//		BRIDGE_DEBUG_PRINTF("Setting LED3 to R%x G%x B%x\r\n", led3r, led3g, led3b);
+	}
+}
+
+void i2cs_dev_ISR(void)
+{
+    static uint8_t rx_addr = 1;
+    uint8_t status;
+
+    if (i2cs_is_interrupted(MASK_I2CS_FIFO_INT_PEND_I2C_INT))
+    {
+        status = i2cs_get_status();
+
+        /* For a write transaction... */
+        if(status & MASK_I2CS_STATUS_RX_REQ)
+        {
+            /* If we are wanting for the Write address to appear... */
+            if (rx_addr)
+            {
+                /* Read in the initial offset to read/write... */
+                rx_addr = 0;
+                i2cs_read(&i2cs_dev_buffer_ptr, 1);
+            }
+            else
+            {
+                /* Write the byte to the register buffer... */
+                i2cs_read(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
+                i2cs_dev_buffer_ptr++;
+            }
+
+        }
+        /* For a read transaction... */
+        else if(status & MASK_I2CS_STATUS_TX_REQ)
+        {
+            /* Write the byte to the I2C bus... */
+            i2cs_write(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
+            i2cs_dev_buffer_ptr++;
+
+        }
+
+        /* For the completion of a transaction... */
+        else if (status & (MASK_I2CS_STATUS_REC_FIN | MASK_I2CS_STATUS_SEND_FIN))
+        {
+        	/* Finished transaction, reset... */
+            rx_addr = 1;
+        }
+
+        /* Wrap around */
+        if (i2cs_dev_buffer_ptr > i2cs_dev_buffer_size)
+            i2cs_dev_buffer_ptr = 0;
+    }
+}
+
+
+
+
+
+
+
+
 void timer_ISR(void)
 {
 	if (timer_is_interrupted(timer_select_a))
@@ -3549,7 +3659,9 @@ uint8_t usbd_testing(void)
 	BRIDGE_DEBUG_PRINTF("Initialised USB.\r\n");
 
 	// Wait for connect to host.
-	while (USBD_connect() != USBD_OK);
+	while (USBD_connect() != USBD_OK) {
+		update_leds();
+	}
 
 	BRIDGE_DEBUG_PRINTF("Connected to USB host.\r\n");
 
@@ -3592,6 +3704,8 @@ uint8_t usbd_testing(void)
 
 	for (;;)
 	{
+		update_leds();
+
 		if (USBD_connect() == USBD_OK)
 		{
 			if (USBD_DFU_is_runtime())
@@ -3599,6 +3713,8 @@ uint8_t usbd_testing(void)
 				// Start the UVC emulation code.
 				while (USBD_process() == USBD_OK)
 				{
+					update_leds();
+
 					// Check a commit has occurred successfully first.
 					if (uvc_commit.bFormatIndex != FORMAT_INDEX_TYPE_NONE)
 					{
@@ -3887,6 +4003,7 @@ int main(void)
 	sys_reset_all();
 	sys_disable(sys_device_camera);
     sys_disable(sys_device_i2c_master);
+    sys_disable(sys_device_i2c_slave);
     sys_disable(sys_device_usb_device);
 
 	/* Enable the UART Device... */
@@ -3956,16 +4073,69 @@ int main(void)
 
     /* Set up I2C */
     sys_enable(sys_device_i2c_master);
+    sys_enable(sys_device_i2c_slave);
 
     gpio_function(44, pad_i2c0_scl); /* I2C0_SCL */
     gpio_function(45, pad_i2c0_sda); /* I2C0_SDA */
     gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
     gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
+    gpio_pull(46, pad_pull_none);
+    gpio_pull(47, pad_pull_none);
 
 	/* Set the I2C Master pins to channel 1 */
 //	sys_i2c_swop(1);
 
     i2cm_init(I2CM_NORMAL_SPEED, 100000);
+
+    /* Initialise the I2C Slave hardware... */
+	i2cs_init(0x38);
+	/* Set up the handler for i2cs_dev... */
+	i2cs_dev_buffer = i2cs_dev_registers;
+	i2cs_dev_buffer_size = 3;
+	i2cs_enable_interrupt(MASK_I2CS_FIFO_INT_ENABLE_I2C_INT);
+	interrupt_attach(interrupt_i2cs, (uint8_t)interrupt_i2cs, i2cs_dev_ISR);
+
+	// Set up GPIOs for RGB LEDs
+	gpio_function(44, pad_i2c0_scl); /* I2C0_SCL */
+	gpio_function(45, pad_i2c0_sda); /* I2C0_SDA */
+	gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
+	gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
+	gpio_pull(46, pad_pull_none);
+	gpio_pull(47, pad_pull_none);
+
+	// LED1: R=GPIO55, G=GPIO29, B=GPIO45
+	// LED2: R=GPIO56, G=GPIO57, B=GPIO58
+	// LED3: R=GPIO52, G=GPIO53, B=GPIO54
+	gpio_function(55, pad_gpio55);
+	gpio_function(29, pad_gpio29);
+	gpio_function(45, pad_gpio45);
+	gpio_function(56, pad_gpio56);
+	gpio_function(57, pad_gpio57);
+	gpio_function(58, pad_gpio58);
+	gpio_function(52, pad_gpio52);
+	gpio_function(53, pad_gpio53);
+	gpio_function(54, pad_gpio54);
+	gpio_dir(55, pad_dir_output);
+	gpio_dir(29, pad_dir_output);
+	gpio_dir(45, pad_dir_output);
+	gpio_dir(56, pad_dir_output);
+	gpio_dir(57, pad_dir_output);
+	gpio_dir(58, pad_dir_output);
+	gpio_dir(52, pad_dir_output);
+	gpio_dir(53, pad_dir_output);
+	gpio_dir(54, pad_dir_output);
+	gpio_write(55, 1);
+	gpio_write(29, 1);
+	gpio_write(45, 1);
+	gpio_write(56, 1);
+	gpio_write(57, 1);
+	gpio_write(58, 1);
+	gpio_write(52, 1);
+	gpio_write(53, 1);
+	gpio_write(54, 1);
+
+	update_leds();
+
 
     BRIDGE_DEBUG_PRINTF("Initialising camera...\r\n");
 
