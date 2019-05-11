@@ -28,6 +28,9 @@ uint16_t po6030_init(void)
 	// Wait a short period of time to allow camera to initialise
 	delayms(10);
 
+	tfp_printf("Camera sensor must be initialised separately over I2C from Raspberry Pi!\r\n");
+	return(0x6030);
+
 	////////////////////
 	// Read device ID //
 	////////////////////
