@@ -3441,7 +3441,7 @@ void suspend_cb(uint8_t status)
 
 	SYS->PMCFG_L |= MASK_SYS_PMCFG_HOST_RESUME_DEV;
 
-	tfp_printf("Suspend\r\n");
+	BRIDGE_DEBUG_PRINTF("Suspend\r\n");
 	// Stop the stream.
 	camera_state_change = CAMERA_STREAMING_STOP;
 	return;
@@ -3460,7 +3460,7 @@ void resume_cb(uint8_t status)
 
 	SYS->PMCFG_L &= (~MASK_SYS_PMCFG_HOST_RESUME_DEV);
 
-	tfp_printf("Resume\r\n");
+	BRIDGE_DEBUG_PRINTF("Resume\r\n");
 	return;
 }
 
@@ -3484,7 +3484,7 @@ void reset_cb(uint8_t status)
 	// move this to DFUSTATE_DFUERROR if it is inappropriate to
 	// find a reset at that stage.
 	USBD_DFU_reset();
-	tfp_printf("Reset\r\n");
+	BRIDGE_DEBUG_PRINTF("Reset\r\n");
 
 	camera_stop();
 
@@ -3542,16 +3542,16 @@ uint8_t usbd_testing(void)
 	usb_ctx.ep0_size = USB_CONTROL_EP_SIZE;
 	//usb_ctx.ep0_cb = ep_cb;
 
-	tfp_printf("Initialising USB...\r\n");
+	BRIDGE_DEBUG_PRINTF("Initialising USB...\r\n");
 
 	USBD_initialise(&usb_ctx);
 
-	tfp_printf("Initialised USB.\r\n");
+	BRIDGE_DEBUG_PRINTF("Initialised USB.\r\n");
 
 	// Wait for connect to host.
 	while (USBD_connect() != USBD_OK);
 
-	tfp_printf("Connected to USB host.\r\n");
+	BRIDGE_DEBUG_PRINTF("Connected to USB host.\r\n");
 
 	USBD_create_endpoint(UVC_EP_INTERRUPT, USBD_EP_INT, USBD_DIR_IN,
 			UVC_INTERRUPT_USBD_EP_SIZE, USBD_DB_OFF, NULL /*ep_cb*/);
@@ -3586,7 +3586,7 @@ uint8_t usbd_testing(void)
 	}
 	memset(&uvc_commit, 0, sizeof(USB_UVC_VideoProbeAndCommitControls));
 
-	tfp_printf("Starting\r\n");
+	BRIDGE_DEBUG_PRINTF("Starting\r\n");
 
     camera_state_change = CAMERA_STREAMING_OFF;
 
@@ -3615,7 +3615,7 @@ uint8_t usbd_testing(void)
 #endif // USB_ENDPOINT_USE_ISOC
 							{
 
-								tfp_printf("Camera starting (sample length %d frame %ld)\r\n", sample_length, frame_size);
+								BRIDGE_DEBUG_PRINTF("Camera starting (sample length %d frame %ld)\r\n", sample_length, frame_size);
 
 								cam_set_threshold(sample_length);
 						        sample_threshold = sample_length;
@@ -3639,7 +3639,7 @@ uint8_t usbd_testing(void)
 								cam_disable_interrupt();
 								cam_stop();
 
-								tfp_printf("Camera stopping\r\n");
+								BRIDGE_DEBUG_PRINTF("Camera stopping\r\n");
 #ifndef USB_ENDPOINT_USE_ISOC
 								usb_alt = 0;
 #endif // USB_ENDPOINT_USE_ISOC
@@ -3869,7 +3869,7 @@ uint8_t usbd_testing(void)
 				// In DFU mode. Process USB requests.
 				while (USBD_process() == USBD_OK);
 			}
-			tfp_printf("Restarting\r\n");
+			BRIDGE_DEBUG_PRINTF("Restarting\r\n");
 		}
 	}
 
@@ -3914,8 +3914,7 @@ int main(void)
 	BRIDGE_DEBUG_PRINTF("Emulate a UVC device connected to the USB.\r\n");
 	BRIDGE_DEBUG_PRINTF("--------------------------------------------------------------------- \r\n");
 
-	BRIDGE_DEBUG_PRINTF("Hello IROS!\r\n");
-
+	BRIDGE_DEBUG_PRINTF("Pi-puck camera test\r\n");
 	BRIDGE_DEBUG_PRINTF("%s %s\r\n", __DATE__, __TIME__);
 #endif // BRIDGE_DEBUG
 
@@ -3973,7 +3972,7 @@ int main(void)
     // Initialise the camera hardware.
     if (camera_init())
     {
-    	tfp_printf("Camera init success\r\n");
+    	BRIDGE_DEBUG_PRINTF("Camera init success\r\n");
 
 		/* Clock data in when VREF is low and HREF is high */
 		cam_init(cam_trigger_mode_1, cam_clock_pol_raising);
@@ -3988,7 +3987,7 @@ int main(void)
     }
     else
     {
-    	tfp_printf("Camera not found\n");
+    	BRIDGE_DEBUG_PRINTF("Camera not found\r\n");
     }
 
     BRIDGE_DEBUG_PRINTF("Done..\r\n");

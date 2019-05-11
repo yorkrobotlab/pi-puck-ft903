@@ -39,7 +39,7 @@ uint16_t po6030_init(void)
 	uint8_t device_id_h = i2c_read_byte(PO6030_I2C_ADDR, 0x00);
 	uint8_t device_id_l = i2c_read_byte(PO6030_I2C_ADDR, 0x01);
 
-	tfp_printf("Device ID: 0x%02x%02x\n", device_id_h, device_id_l);
+	tfp_printf("Device ID: 0x%02x%02x\r\n", device_id_h, device_id_l);
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     // Set image output size to VGA mode (640x480) (see table on page 60 of PO6030K data sheet) //
@@ -142,17 +142,17 @@ void po6030_stop(void)
 void po6030_set(int resolution, int frame_rate, int format)
 {
 	if(format == CAMERA_FORMAT_UNCOMPRESSED)
-		tfp_printf("Format: Uncompressed\n");
+		tfp_printf("Format: Uncompressed\r\n");
 
 	switch(resolution)
 	{
 	case CAMERA_MODE_QVGA:
-		tfp_printf("Resolution: QVGA\n");
+		tfp_printf("Resolution: QVGA\r\n");
 		break;
 	case CAMERA_MODE_VGA:
-		tfp_printf("Resolution: VGA\n");
+		tfp_printf("Resolution: VGA\r\n");
 		break;
 	}
 
-	tfp_printf("Framerate: %d\n", frame_rate);
+	tfp_printf("Framerate: %d\r\n", frame_rate);
 }
