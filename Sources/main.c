@@ -61,44 +61,6 @@
 
 #include "camera.h"
 
-/**
- @brief Camera type connected.
- @details Each camera type supported will have different setup procedures
-  and configuration settings. This macro is used to select one of the
-  supported camera types for use in this application.
-  CAMERA_TYPE can be passed as a directive to the makefile.
- */
-#ifndef CAMERA_TYPE
-#define CAMERA_TYPE CAMERA_PO8030
-#endif // CAMERA_TYPE
-
-#if CAMERA_TYPE == CAMERA_OV5640
-#include "ov5640_camera.h"
-#define camera_init ov5640_init
-#define camera_start ov5640_start
-#define camera_stop ov5640_stop
-#define camera_set ov5640_set
-#elif CAMERA_TYPE == CAMERA_OV965X
-#include "ov965x_camera.h"
-#define camera_init ov965x_init
-#define camera_start ov965x_start
-#define camera_stop ov965x_stop
-#define camera_set ov965x_set
-#elif CAMERA_TYPE == CAMERA_PO6030
-#include "po6030_camera.h"
-#define camera_init po6030_init
-#define camera_start po6030_start
-#define camera_stop po6030_stop
-#define camera_set po6030_set
-#elif CAMERA_TYPE == CAMERA_PO8030
-#include "po8030_camera.h"
-#define camera_init po8030_init
-#define camera_start po8030_start
-#define camera_stop po8030_stop
-#define camera_set po8030_set
-#else
-#error unsupported camera type
-#endif
 
 /**
  @brief UVC device to use isochronous endpoints.
@@ -297,32 +259,11 @@
 #define UVC_DATA_USBD_EP_SIZE_FS 		USBD_EP_SIZE_512
 //@}
 
-/** @brief Payload Type Definitions
- * @details Supported payload types for the selected camera module.
- *  The OV5640 module supports MJPEG and uncompressed output.
- *  The OV965X only supports uncompressed output.
- */
-//@{
-#if (CAMERA_TYPE == CAMERA_OV5640) || (CAMERA_TYPE == CAMERA_OV965X) || (CAMERA_TYPE == CAMERA_PO6030) || (CAMERA_TYPE == CAMERA_PO8030)
-#define PAYLOAD_UNCOMPRESSED
-#endif
-#if CAMERA_TYPE == CAMERA_OV5640
-#define PAYLOAD_UNCOMPRESSED
-#define PAYLOAD_MJPEG
-#endif
-//@}
-
 /** @brief Payload Type Definition Count
  * @details Count supported payload types for the selected camera module.
  */
 //@{
-#if defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-#define FORMAT_INDEX_HS_COUNT 2
-#elif defined(PAYLOAD_UNCOMPRESSED) || defined(PAYLOAD_MJPEG)
 #define FORMAT_INDEX_HS_COUNT 1
-#else
-#define FORMAT_INDEX_HS_COUNT 0
-#endif
 //@}
 
 /** @brief Supported Uncompressed Formats for BULK endpoints
@@ -335,15 +276,10 @@
  */
 //@{
 #ifndef USB_ENDPOINT_USE_ISOC
-#ifdef PAYLOAD_UNCOMPRESSED
 #define UC_QVGA // Works for OV965x and OV5640
 #define UC_VGA // Works for OV965x and OV5640
-#undef UC_SVGA // Note: not recommended for OV965x and OV5640
-#undef UC_XGA // Note: untested for OV965x and OV5640
-#undef UC_SXGA // Note: untested for OV965x and OV5640
 /// Count of the total number of formats enabled.
 #define UC_FORMAT_COUNT 2
-#endif // PAYLOAD_UNCOMPRESSED
 #endif // USB_ENDPOINT_USE_ISOC
 //@}
 
@@ -354,37 +290,11 @@
  */
 //@{
 #ifdef USB_ENDPOINT_USE_ISOC
-#ifdef PAYLOAD_UNCOMPRESSED
 #define UC_QVGA // Works for OV965x and OV5640
 #undef UC_VGA // Note: untested for OV965x and OV5640
-#undef UC_SVGA // Note: untested for OV965x and OV5640
-#undef UC_XGA // Note: untested for OV965x and OV5640
-#undef UC_SXGA // Note: untested for OV965x and OV5640
 /// Count of the total number of formats enabled.
 #define UC_FORMAT_COUNT 1
-#endif // PAYLOAD_UNCOMPRESSED
 #endif // USB_ENDPOINT_USE_ISOC
-//@}
-
-/** @brief Supported MJPEG Formats
- * @details Supported formats for MJPEG video from the
- * camera module.
- * The MJPEG output is tested for QVGA, VGA and SVGA. The register
- * settings for the OV5640 module for XGA and SXGA are not
- * calculated. They are left here and can be selected.
- * All MJPEG output data rates are within the limits of isochronous
- * endpoints.
- */
-//@{
-#ifdef PAYLOAD_MJPEG
-#define MJPEG_QVGA // Works for OV5640
-#define MJPEG_VGA // Works for OV5640
-#define MJPEG_SVGA // Works for OV5640
-#undef MJPEG_XGA // Note: untested for OV965x and OV5640
-#undef MJPEG_SXGA // Note: untested for OV965x and OV5640
-/// Count of the total number of formats enabled.
-#define MJPEG_FORMAT_COUNT 3
-#endif // PAYLOAD_MJPEG
 //@}
 
 /** @brief Uncompressed payload format definition
@@ -398,11 +308,6 @@
  * @details Uncompressed payload images can be 16 or 24 bits per pixel.
  */
 #define PAYLOAD_BBP_UNCOMPRESSED 0x10 /* format.bBitsPerPixel */
-
-/** @brief Compressed payload pixel size
- * @details Uncompressed payload images can be 16 or 24 bits per pixel.
- */
-#define PAYLOAD_BBP_MJPEG 0x10 /* format.bBitsPerPixel */
 
 /** @brief UVC Payload Header Length
  * @details The UVC payload can have a variable length header. This must
@@ -432,12 +337,6 @@
 #define FORMAT_UC_BBP (PAYLOAD_BBP_UNCOMPRESSED >> 3)
 
 /**
- @brief Format Bits Per Pixel definition for UVC device.
- @details Derived from the image type.
- */
-#define FORMAT_MJPEG_BBP (PAYLOAD_BBP_MJPEG >> 3)
-
-/**
  @brief Frame Index definitions for UVC device.
  @details For uncompressed formats.
  */
@@ -449,9 +348,6 @@ enum {
 #endif
 #ifdef UC_VGA
 	FRAME_INDEX_HS_UC_VGA, /// VGA - 640 x 480
-#endif
-#ifdef UC_SVGA
-	FRAME_INDEX_HS_UC_SVGA, /// SVGA - 800 x 600
 #endif
 	FRAME_INDEX_HS_UC_END,
 
@@ -466,9 +362,6 @@ enum {
 #ifndef UC_VGA
 	FRAME_INDEX_HS_UC_VGA, /// Dummy definition
 #endif
-#ifndef UC_SVGA
-	FRAME_INDEX_HS_UC_SVGA, /// SVGA - 800 x 600
-#endif
 	//@}
 };
 ///
@@ -477,63 +370,11 @@ enum {
 //@}
 
 /**
- @brief Frame Index definitions for UVC device.
- @details For JPEG compressed formats.
- */
-//@{
-enum {
-	FRAME_INDEX_HS_MJPEG_DISABLED = 0, /// No MJPEG format
-#ifdef MJPEG_QVGA
-	FRAME_INDEX_HS_MJPEG_QVGA, /// QVGA - 320 x 240
-#endif
-#ifdef MJPEG_VGA
-	FRAME_INDEX_HS_MJPEG_VGA, /// VGA - 640 x 480
-#endif
-#ifdef MJPEG_SVGA
-	FRAME_INDEX_HS_MJPEG_SVGA, /// SVGA - 800 x 600
-#endif
-#ifdef MJPEG_XGA
-	FRAME_INDEX_HS_MJPEG_XGA, /// XGA - 1024 x 768
-#endif
-#ifdef MJPEG_SXGA
-	FRAME_INDEX_HS_MJPEG_SXGA, /// SXGA - 1280 x 1024
-#endif
-	FRAME_INDEX_HS_MJPEG_END,
-
-	/** Add dummy definitions for unused resolutions.
-	 * This allows us to simplify code later.
-	 * Definitions are made but are invalid.
-	 */
-	//@{
-#ifndef MJPEG_QVGA
-	FRAME_INDEX_HS_MJPEG_QVGA, /// Dummy definition
-#endif
-#ifndef MJPEG_VGA
-	FRAME_INDEX_HS_MJPEG_VGA, /// Dummy definition
-#endif
-#ifndef MJPEG_SVGA
-	FRAME_INDEX_HS_MJPEG_SVGA, /// Dummy definition
-#endif
-#ifndef MJPEG_XGA
-	FRAME_INDEX_HS_MJPEG_XGA, /// Dummy definition
-#endif
-#ifndef MJPEG_SXGA
-	FRAME_INDEX_HS_MJPEG_SXGA, /// Dummy definition
-#endif
-	//@}
-};
-#define FRAME_INDEX_HS_MJPEG_COUNT MJPEG_FORMAT_COUNT
-#define FRAME_INDEX_HS_MJPEG_DEFAULT  1
-//@}
-
-/**
  @brief Supported Frame Index definitions for UVC device.
  @details Declare the range of resolutions to support for uncompressed formats.
  */
 //@{
-#ifdef UC_SVGA
-#define FRAME_INDEX_HS_UC_MAX FRAME_INDEX_HS_UC_SVGA
-#elif defined(UC_VGA)
+#ifdef UC_VGA
 #define FRAME_INDEX_HS_UC_MAX FRAME_INDEX_HS_UC_VGA
 #elif defined(UC_QVGA)
 #define FRAME_INDEX_HS_UC_MAX FRAME_INDEX_HS_UC_QVGA
@@ -551,40 +392,6 @@ enum {
 //@}
 
 /**
- @brief Supported Frame Index definitions for UVC device.
- @details Declare the range of resolutions to support for JPEG compressed formats.
- */
-//@{
-#if defined(MJPEG_SXGA)
-#define FRAME_INDEX_HS_MJPEG_MAX FRAME_INDEX_HS_MJPEG_SXGA
-#elif defined(MJPEG_XGA)
-#define FRAME_INDEX_HS_MJPEG_MAX FRAME_INDEX_HS_MJPEG_XGA
-#elif defined(MJPEG_SVGA)
-#define FRAME_INDEX_HS_MJPEG_MAX FRAME_INDEX_HS_MJPEG_SVGA
-#elif defined(MJPEG_VGA)
-#define FRAME_INDEX_HS_MJPEG_MAX FRAME_INDEX_HS_MJPEG_VGA
-#elif defined(MJPEG_QVGA)
-#define FRAME_INDEX_HS_MJPEG_MAX FRAME_INDEX_HS_MJPEG_QVGA
-#else
-#define FRAME_INDEX_HS_MJPEG_MAX 0
-#endif
-
-#if defined(MJPEG_QVGA)
-#define FRAME_INDEX_HS_MJPEG_MIN FRAME_INDEX_HS_MJPEG_QVGA
-#elif defined(MJPEG_VGA)
-#define FRAME_INDEX_HS_MJPEG_MIN FRAME_INDEX_HS_MJPEG_VGA
-#elif defined(MJPEG_SGA)
-#define FRAME_INDEX_HS_MJPEG_MIN FRAME_INDEX_HS_MJPEG_SVGA
-#elif defined(MJPEG_XGA)
-#define FRAME_INDEX_HS_MJPEG_MIN FRAME_INDEX_HS_MJPEG_XGA
-#elif defined(MJPEG_SXGA)
-#define FRAME_INDEX_HS_MJPEG_MIN FRAME_INDEX_HS_MJPEG_SXGA
-#else
-#define FRAME_INDEX_HS_MJPEG_MIN 0
-#endif
-//@}
-
-/**
  @brief Format Index Type definitions for UVC device.
  @details This can be done more neatly in an enum but preprocessor
   macros are used. If an enum were used then these
@@ -592,12 +399,7 @@ enum {
 //@{
 enum {
 	FORMAT_INDEX_TYPE_NONE = 0,
-#ifdef PAYLOAD_UNCOMPRESSED
 	FORMAT_INDEX_TYPE_UNCOMPRESSED,
-#endif
-#ifdef PAYLOAD_MJPEG
-	FORMAT_INDEX_TYPE_MJPEG,
-#endif
 	FORMAT_INDEX_END,
 
 	/** Add dummy definitions for unused types.
@@ -605,21 +407,10 @@ enum {
 	 * Definitions are made but are invalid.
 	 */
 	//@{
-#ifndef PAYLOAD_UNCOMPRESSED
-	FORMAT_INDEX_TYPE_UNCOMPRESSED,
-#endif
-#ifndef PAYLOAD_MJPEG
 	FORMAT_INDEX_TYPE_MJPEG,
-#endif
 	//@}
 };
-#if defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-#define FORMAT_INDEX_HS_COUNT 2
-#elif defined(PAYLOAD_UNCOMPRESSED) || defined(PAYLOAD_MJPEG)
 #define FORMAT_INDEX_HS_COUNT 1
-#else
-#define FORMAT_INDEX_HS_COUNT 2
-#endif
 //@}
 
 /**
@@ -629,11 +420,8 @@ enum {
 //@{
 #define FRAME_INDEX_HS_UC_QVGA_SIZE (CAMERA_FRAME_WIDTH_QVGA * CAMERA_FRAME_HEIGHT_QVGA * FORMAT_UC_BBP)
 #define FRAME_INDEX_HS_UC_VGA_SIZE (CAMERA_FRAME_WIDTH_VGA * CAMERA_FRAME_HEIGHT_VGA * FORMAT_UC_BBP)
-#define FRAME_INDEX_HS_UC_SVGA_SIZE (CAMERA_FRAME_WIDTH_SVGA * CAMERA_FRAME_HEIGHT_SVGA * FORMAT_UC_BBP)
 
-#if defined(UC_SVGA)
-#define FRAME_INDEX_HS_UC_MAX_SIZE FRAME_INDEX_HS_UC_SVGA_SIZE
-#elif defined(UC_VGA)
+#if defined(UC_VGA)
 #define FRAME_INDEX_HS_UC_MAX_SIZE FRAME_INDEX_HS_UC_VGA_SIZE
 #elif defined(UC_QVGA)
 #define FRAME_INDEX_HS_UC_MAX_SIZE FRAME_INDEX_HS_UC_QVGA_SIZE
@@ -651,50 +439,6 @@ enum {
 
 #define FRAME_INDEX_FS_QVGA_SIZE (160 * 120 * FORMAT_UC_BBP)
 #define FRAME_INDEX_FS_MAX_SIZE FRAME_INDEX_FS_QVGA_SIZE
-//@}
-
-/**
- @brief Frame Size definitions for UVC device.
- @details Frames sizes for MJPEG compressed formats.
- */
-//@{
-#ifdef PAYLOAD_MJPEG
-#if CAMERA_TYPE == CAMERA_OV5640
-#define FRAME_INDEX_HS_MJPEG_QVGA_SIZE (OV5640_FRAME_SIZE_MJPEG_QVGA)
-#define FRAME_INDEX_HS_MJPEG_VGA_SIZE (OV5640_FRAME_SIZE_MJPEG_VGA)
-#define FRAME_INDEX_HS_MJPEG_SVGA_SIZE (OV5640_FRAME_SIZE_MJPEG_SVGA)
-#define FRAME_INDEX_HS_MJPEG_XGA_SIZE (OV5640_FRAME_SIZE_MJPEG_XGA)
-#define FRAME_INDEX_HS_MJPEG_SXGA_SIZE (OV5640_FRAME_SIZE_MJPEG_SXGA)
-#endif // CAMERA_TYPE == CAMERA_OV5640
-#endif
-
-#if defined(MJPEG_SXGA)
-#define FRAME_INDEX_HS_MJPEG_MAX_SIZE FRAME_INDEX_HS_MJPEG_SXGA_SIZE
-#elif defined(MJPEG_XGA)
-#define FRAME_INDEX_HS_MJPEG_MAX_SIZE FRAME_INDEX_HS_MJPEG_XGA_SIZE
-#elif defined(MJPEG_SGA)
-#define FRAME_INDEX_HS_MJPEG_MAX_SIZE FRAME_INDEX_HS_MJPEG_SVGA_SIZE
-#elif defined(MJPEG_VGA)
-#define FRAME_INDEX_HS_MJPEG_MAX_SIZE FRAME_INDEX_HS_MJPEG_VGA_SIZE
-#elif defined(MJPEG_QVGA)
-#define FRAME_INDEX_HS_MJPEG_MAX_SIZE FRAME_INDEX_HS_MJPEG_QVGA_SIZE
-#else
-#define FRAME_INDEX_HS_MJPEG_MAX_SIZE 0
-#endif
-
-#if defined(MJPEG_QVGA)
-#define FRAME_INDEX_HS_MJPEG_MIN_SIZE FRAME_INDEX_HS_MJPEG_QVGA_SIZE
-#elif defined(MJPEG_VGA)
-#define FRAME_INDEX_HS_MJPEG_MIN_SIZE FRAME_INDEX_HS_MJPEG_VGA_SIZE
-#elif defined(MJPEG_SGA)
-#define FRAME_INDEX_HS_MJPEG_MIN_SIZE FRAME_INDEX_HS_MJPEG_SVGA_SIZE
-#elif defined(MJPEG_XGA)
-#define FRAME_INDEX_HS_MJPEG_MIN_SIZE FRAME_INDEX_HS_MJPEG_XGA_SIZE
-#elif defined(MJPEG_SXGA)
-#define FRAME_INDEX_HS_MJPEG_MIN_SIZE FRAME_INDEX_HS_MJPEG_SXGA_SIZE
-#else
-#define FRAME_INDEX_HS_MJPEG_MIN_SIZE 0
-#endif
 //@}
 
 /**
@@ -727,9 +471,6 @@ enum {
 #define FRAME_INDEX_HS_UC_VGA_FRAME_RATE CAMERA_FRAME_RATE_15
 #define FRAME_INDEX_HS_UC_VGA_FRAME_INTERVAL FRAME_INTERVAL_15
 
-#define FRAME_INDEX_HS_UC_SVGA_FRAME_RATE CAMERA_FRAME_RATE_15
-#define FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL FRAME_INTERVAL_15
-
 #define FRAME_INDEX_HS_UC_MIN_FRAME_INTERVAL FRAME_INTERVAL_15
 #define FRAME_INDEX_HS_UC_MAX_FRAME_INTERVAL FRAME_INTERVAL_15
 
@@ -750,17 +491,6 @@ enum {
 #define FRAME_INDEX_HS_MJPEG_VGA_FRAME_RATE CAMERA_FRAME_RATE_15
 #define FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL FRAME_INTERVAL_15
 
-#define FRAME_INDEX_HS_MJPEG_SVGA_FRAME_RATE CAMERA_FRAME_RATE_15
-#define FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL FRAME_INTERVAL_15
-
-#define FRAME_INDEX_HS_MJPEG_XGA_FRAME_RATE CAMERA_FRAME_RATE_7_5
-#define FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL FRAME_INTERVAL_7_5
-
-#define FRAME_INDEX_HS_MJPEG_SXGA_FRAME_RATE CAMERA_FRAME_RATE_7_5
-#define FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL FRAME_INTERVAL_7_5
-
-#define FRAME_INDEX_HS_MJPEG_MIN_FRAME_INTERVAL FRAME_INTERVAL_15
-#define FRAME_INDEX_HS_MJPEG_MAX_FRAME_INTERVAL FRAME_INTERVAL_15
 //@}
 
 /**
@@ -770,11 +500,8 @@ enum {
 //@{
 #define FRAME_INDEX_HS_UC_QVGA_TRANSFER_SIZE (CAMERA_FRAME_WIDTH_QVGA * FORMAT_UC_BBP)
 #define FRAME_INDEX_HS_UC_VGA_TRANSFER_SIZE (CAMERA_FRAME_WIDTH_VGA * FORMAT_UC_BBP)
-#define FRAME_INDEX_HS_UC_SVGA_TRANSFER_SIZE (CAMERA_FRAME_WIDTH_SVGA * FORMAT_UC_BBP)
 
-#if defined(UC_SVGA)
-#define FRAME_INDEX_HS_UC_MAX_TRANSFER_SIZE FRAME_INDEX_HS_UC_SVGA_TRANSFER_SIZE
-#elif defined(UC_VGA)
+#if defined(UC_VGA)
 #define FRAME_INDEX_HS_UC_MAX_TRANSFER_SIZE FRAME_INDEX_HS_UC_VGA_TRANSFER_SIZE
 #elif defined(UC_QVGA)
 #define FRAME_INDEX_HS_UC_MAX_TRANSFER_SIZE FRAME_INDEX_HS_UC_QVGA_TRANSFER_SIZE
@@ -792,61 +519,19 @@ enum {
 //@}
 
 /**
- @brief Transfer size definitions for UVC device.
- @details Frames sizes for MJPEG compressed formats.
- */
-//@{
-#define FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE (CAMERA_PREFERRED_LINE_LENGTH)
-#define FRAME_INDEX_HS_MJPEG_MAX_TRANSFER_SIZE FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE
-#define FRAME_INDEX_HS_MJPEG_MIN_TRANSFER_SIZE FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE
-//@}
-
-/**
  @brief Maximum/Minimum Frame Lengths in bytes for UVC device.
  */
 //@{
-#if defined(PAYLOAD_UNCOMPRESSED) && !defined(PAYLOAD_MJPEG)
 #define FRAME_INDEX_MAX_SIZE (FRAME_INDEX_HS_UC_MAX_SIZE)
 #define FRAME_INDEX_MIN_SIZE (FRAME_INDEX_HS_UC_MIN_SIZE)
-#elif !defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-#define FRAME_INDEX_MAX_SIZE (FRAME_INDEX_HS_MJPEG_MAX_SIZE)
-#define FRAME_INDEX_MIN_SIZE (FRAME_INDEX_HS_MJPEG_MIN_SIZE)
-#elif defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-#if FRAME_INDEX_HS_UC_MAX_SIZE > FRAME_INDEX_HS_MJPEG_MAX_SIZE
-#define FRAME_INDEX_MAX_SIZE (FRAME_INDEX_HS_UC_MAX_SIZE)
-#else
-#define FRAME_INDEX_MAX_SIZE (FRAME_INDEX_HS_MJPEG_MAX_SIZE)
-#endif
-#if FRAME_INDEX_HS_UC_MIN_SIZE < FRAME_INDEX_HS_MJPEG_MIN_SIZE
-#define FRAME_INDEX_MIN_SIZE (FRAME_INDEX_HS_UC_MIN_SIZE)
-#else
-#define FRAME_INDEX_MIN_SIZE (FRAME_INDEX_HS_MJPEG_MIN_SIZE)
-#endif
-#endif
 //@}
 
 /**
  @brief Maximum/Minimum Line Lengths in bytes for UVC device.
  */
 //@{
-#if defined(PAYLOAD_UNCOMPRESSED) && !defined(PAYLOAD_MJPEG)
 #define FRAME_INDEX_MAX_TRANSFER_SIZE (FRAME_INDEX_HS_UC_MAX_TRANSFER_SIZE)
 #define FRAME_INDEX_MIN_TRANSFER_SIZE (FRAME_INDEX_HS_UC_MIN_TRANSFER_SIZE)
-#elif !defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-#define FRAME_INDEX_MAX_TRANSFER_SIZE (FRAME_INDEX_HS_MJPEG_MAX_TRANSFER_SIZE)
-#define FRAME_INDEX_MIN_TRANSFER_SIZE (FRAME_INDEX_HS_MJPEG_MIN_TRANSFER_SIZE)
-#elif defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-#if FRAME_INDEX_HS_UC_MAX_TRANSFER_SIZE > FRAME_INDEX_HS_MJPEG_MAX_TRANSFER_SIZE
-#define FRAME_INDEX_MAX_TRANSFER_SIZE (FRAME_INDEX_HS_UC_MAX_TRANSFER_SIZE)
-#else
-#define FRAME_INDEX_MAX_TRANSFER_SIZE (FRAME_INDEX_HS_MJPEG_MAX_TRANSFER_SIZE)
-#endif
-#if FRAME_INDEX_HS_UC_MIN_TRANSFER_SIZE < FRAME_INDEX_HS_MJPEG_MIN_TRANSFER_SIZE
-#define FRAME_INDEX_MIN_TRANSFER_SIZE (FRAME_INDEX_HS_UC_MIN_TRANSFER_SIZE)
-#else
-#define FRAME_INDEX_MIN_TRANSFER_SIZE (FRAME_INDEX_HS_MJPEG_MIN_TRANSFER_SIZE)
-#endif
-#endif
 //@}
 
 /**
@@ -948,17 +633,10 @@ DESCRIPTOR_QUALIFIER /*__at(STRING_DESCRIPTOR_LOCATION)*/ uint16_t string_descri
 		UNICODE_LEN(15), L'A', L'N', L'_', L'4', L'1', L'4', L' ', L'U', L'V', L'C', L' ', L'B', L'U', L'L', L'K',
 #endif // USB_ENDPOINT_USE_ISOC
 
-		// String 3 (Serial Number): "(UCxxxxx)(MJxxxxx)" where UC signifies
-		// UnCompressed video supported, MJ is MJPEG compression is supported.
+		// String 3 (Serial Number): "UCxxxxx" where UC signifies
+		// UnCompressed video supported.
 		// Each x is 1 or 0 depending on support for QVGA, VGA, SVGA, XGA or SXGA.
-#if defined(PAYLOAD_UNCOMPRESSED) && defined(PAYLOAD_MJPEG)
-		UNICODE_LEN(14),
-#elif defined(PAYLOAD_UNCOMPRESSED) || defined(PAYLOAD_MJPEG)
 		UNICODE_LEN(7),
-#else
-		UNICODE_LEN(0),
-#endif
-#if defined(PAYLOAD_UNCOMPRESSED)
 		L'U', L'C',
 #ifdef UC_QVGA
 		L'1',
@@ -970,50 +648,9 @@ DESCRIPTOR_QUALIFIER /*__at(STRING_DESCRIPTOR_LOCATION)*/ uint16_t string_descri
 #else
 		L'0',
 #endif
-#ifdef UC_SVGA
-		L'1',
-#else
 		L'0',
-#endif
-#ifdef UC_XGA
-		L'1',
-#else
 		L'0',
-#endif
-#ifdef UC_SXGA
-		L'1',
-#else
 		L'0',
-#endif
-#endif // PAYLOAD_UNCOMPRESSED
-#if defined(PAYLOAD_MJPEG)
-		L'M', L'J',
-#ifdef MJPEG_QVGA
-		L'1',
-#else
-		L'0',
-#endif
-#ifdef MJPEG_VGA
-		L'1',
-#else
-		L'0',
-#endif
-#ifdef MJPEG_SVGA
-		L'1',
-#else
-		L'0',
-#endif
-#ifdef MJPEG_XGA
-		L'1',
-#else
-		L'0',
-#endif
-#ifdef MJPEG_SXGA
-		L'1',
-#else
-		L'0',
-#endif
-#endif // PAYLOAD_MJPEG
 
 		// String 4 (DFU Product Name): "FT900 DFU Mode"
 		UNICODE_LEN(14), L'F', L'T', L'9', L'0', L'0', L' ', L'D', L'F', L'U', L' ', L'M', L'o', L'd', L'e',
@@ -1092,7 +729,6 @@ struct UVC_VC_config_descriptor {
 struct UVC_VS_config_descriptor_hs {
 	USB_UVC_VS_CSInterfaceInputHeaderDescriptor(FORMAT_INDEX_HS_COUNT) vs_header;
 
-#ifdef PAYLOAD_UNCOMPRESSED
 	// Uncompressed video format and frame descriptors
 	USB_UVC_VS_UncompressedVideoFormatDescriptor format_uc;
 #ifdef UC_QVGA
@@ -1101,38 +737,7 @@ struct UVC_VS_config_descriptor_hs {
 #ifdef UC_VGA
 	USB_UVC_VS_UncompressedVideoFrameDescriptorDiscrete(1) hs_frame_vga;
 #endif
-#ifdef UC_SVGA
-	USB_UVC_VS_UncompressedVideoFrameDescriptorDiscrete(1) hs_frame_svga;
-#endif
-#ifdef UC_XGA
-	USB_UVC_VS_UncompressedVideoFrameDescriptorDiscrete(1) hs_frame_xga;
-#endif
-#ifdef UC_SXGA
-	USB_UVC_VS_UncompressedVideoFrameDescriptorDiscrete(1) hs_frame_sxga;
-#endif
 	USB_UVC_ColorMatchingDescriptor hs_colour_match_uc;
-#endif // PAYLOAD_UNCOMPRESSED
-
-#ifdef PAYLOAD_MJPEG
-	// MJPEG compressed video format and frame descriptors
-	USB_UVC_VS_MJPEGVideoFormatDescriptor format_mjpeg;
-#ifdef MJPEG_QVGA
-	USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1) hs_frame_qvga_mjpeg;
-#endif
-#ifdef MJPEG_VGA
-	USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1) hs_frame_vga_mjpeg;
-#endif
-#ifdef MJPEG_SVGA
-	USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1) hs_frame_svga_mjpeg;
-#endif
-#ifdef MJPEG_XGA
-	USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1) hs_frame_xga_mjpeg;
-#endif
-#ifdef MJPEG_SXGA
-	USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1) hs_frame_sxga_mjpeg;
-#endif
-	USB_UVC_ColorMatchingDescriptor hs_colour_match_mjpeg;
-#endif // PAYLOAD_MJPEG
 };
 
 /**
@@ -1199,7 +804,7 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_uvc_hs config_descriptor_uvc_hs =
 		USB_DESCRIPTOR_TYPE_CONFIGURATION, /* configuration.bDescriptorType */
 		sizeof(struct config_descriptor_uvc_hs), /* configuration.wTotalLength */
 #ifdef USB_INTERFACE_USE_DFU
-				0x03, /* configuration.bNumInterfaces */
+		0x03, /* configuration.bNumInterfaces */
 #else // !USB_INTERFACE_USE_DFU
 		0x02, /* configuration.bNumInterfaces */
 #endif // USB_INTERFACE_USE_DFU
@@ -1341,16 +946,10 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_uvc_hs config_descriptor_uvc_hs =
 			0x00, /* vs_header.bTriggerUsage */
 			0x01, /* vs_header.bControlSize */
 			{
-#ifdef PAYLOAD_UNCOMPRESSED
-					0x00, /* vs_header.bmaControls format 0 */
-#endif
-#ifdef PAYLOAD_MJPEG
-					0x00, /* vs_header.bmaControls format 1 */
-#endif
+				0x00, /* vs_header.bmaControls format 0 */
 			},
 		},
 
-#ifdef PAYLOAD_UNCOMPRESSED
 		// ---- Class specific Uncompressed VS Format Descriptor ----
 		{
 			sizeof(USB_UVC_VS_UncompressedVideoFormatDescriptor), /* format.bLength */
@@ -1407,26 +1006,6 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_uvc_hs config_descriptor_uvc_hs =
 		},
 #endif
 
-#ifdef UC_SVGA
-		// ---- Class specific Uncompressed VS Frame Descriptor ----
-		// 800 x 600 pixels, 15 fps. SVGA.
-		{
-			sizeof(USB_UVC_VS_UncompressedVideoFrameDescriptorDiscrete(1)), /* frame.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* frame.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FRAME_UNCOMPRESSED, /* frame.bDescriptorSubType */
-			FRAME_INDEX_HS_UC_SVGA, /* frame.bFrameIndex */
-			0x00, /* frame.bmCapabilities */
-			CAMERA_FRAME_WIDTH_SVGA, /* frame.wWidth */
-			CAMERA_FRAME_HEIGHT_SVGA, /* frame.wHeight */
-			FRAME_INDEX_HS_UC_SVGA_SIZE * FRAME_INDEX_HS_UC_SVGA_FRAME_RATE * 8, /* frame.dwMinBitRate */
-			FRAME_INDEX_HS_UC_SVGA_SIZE * FRAME_INDEX_HS_UC_SVGA_FRAME_RATE * 8, /* frame.dwMaxBitRate */
-			FRAME_INDEX_HS_UC_SVGA_SIZE, /* frame.dwMaxVideoFrameBufferSize */
-			FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL, /* frame.dwDefaultFrameInterval */
-			0x01, /* frame.bFrameIntervalType */
-			{FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL, }, /* frame.dwFrameInterval */
-		},
-#endif
-
 		// ---- Class specific Color Matching Descriptor ----
 		{
 				sizeof(USB_UVC_ColorMatchingDescriptor),  /* desc.bLength */
@@ -1436,136 +1015,6 @@ DESCRIPTOR_QUALIFIER struct config_descriptor_uvc_hs config_descriptor_uvc_hs =
 				1, /* desc.bTransferCharacteristics */
 				4, /* desc.bMatrixCoefficients */
 		},
-#endif // PAYLOAD_UNCOMPRESSED
-
-#ifdef PAYLOAD_MJPEG
-
-		// ---- Class specific MJPEG Compressed VS Format Descriptor ----
-		{
-			sizeof(USB_UVC_VS_MJPEGVideoFormatDescriptor), /* format.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* format.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FORMAT_MJPEG, /* format.bDescriptorSubType */
-			FORMAT_INDEX_TYPE_MJPEG, /* format.bFormatIndex */
-			FRAME_INDEX_HS_MJPEG_COUNT, /* format.bNumFrameDescriptors */
-			1, /* format.bmFlags */
-			FRAME_INDEX_HS_MJPEG_DEFAULT, /* format.bDefaultFrameIndex */
-			FRAME_RATIO_X, /* format.bAspectRatioX */
-			FRAME_RATIO_Y, /* format.bAspectRatioY */
-			0x00, /* format.bmInterlaceFlags */
-			0x00, /* format.bCopyProtect */
-		},
-
-#ifdef MJPEG_QVGA
-		// ---- Class specific MJPEG VS Frame Descriptor ----
-		// 320 x 240 pixels, 15 fps. QVGA.
-		{
-			sizeof(USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1)), /* frame.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* frame.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FRAME_MJPEG, /* frame.bDescriptorSubType */
-			FRAME_INDEX_HS_MJPEG_QVGA, /* frame.bFrameIndex */
-			0x00, /* frame.bmCapabilities */
-			CAMERA_FRAME_WIDTH_QVGA, /* frame.wWidth */
-			CAMERA_FRAME_HEIGHT_QVGA, /* frame.wHeight */
-			FRAME_INDEX_HS_MJPEG_QVGA_SIZE * FRAME_INDEX_HS_MJPEG_QVGA_FRAME_RATE * PAYLOAD_BBP_MJPEG, /* frame.dwMinBitRate */
-			FRAME_INDEX_HS_MJPEG_QVGA_SIZE * FRAME_INDEX_HS_MJPEG_QVGA_FRAME_RATE * PAYLOAD_BBP_MJPEG, /* frame.dwMaxBitRate */
-			FRAME_INDEX_HS_MJPEG_QVGA_SIZE, /* frame.dwMaxVideoFrameBufferSize */
-			FRAME_INDEX_HS_MJPEG_QVGA_FRAME_INTERVAL, /* frame.dwDefaultFrameInterval */
-			0x01, /* frame.bFrameIntervalType */
-			{FRAME_INDEX_HS_MJPEG_QVGA_FRAME_INTERVAL, }, /* frame.dwFrameInterval */
-		},
-#endif
-
-#ifdef MJPEG_VGA
-		// ---- Class specific MJPEG VS Frame Descriptor ----
-		// 640 x 480 pixels, 15 fps. VGA.
-		{
-			sizeof(USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1)), /* frame.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* frame.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FRAME_MJPEG, /* frame.bDescriptorSubType */
-			FRAME_INDEX_HS_MJPEG_VGA, /* frame.bFrameIndex */
-			0x00, /* frame.bmCapabilities */
-			CAMERA_FRAME_WIDTH_VGA, /* frame.wWidth */
-			CAMERA_FRAME_HEIGHT_VGA, /* frame.wHeight */
-			FRAME_INDEX_HS_MJPEG_VGA_SIZE * FRAME_INDEX_HS_MJPEG_VGA_FRAME_RATE * 8, /* frame.dwMinBitRate */
-			FRAME_INDEX_HS_MJPEG_VGA_SIZE * FRAME_INDEX_HS_MJPEG_VGA_FRAME_RATE * 8, /* frame.dwMaxBitRate */
-			FRAME_INDEX_HS_MJPEG_VGA_SIZE, /* frame.dwMaxVideoFrameBufferSize */
-			FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL, /* frame.dwDefaultFrameInterval */
-			0x01, /* frame.bFrameIntervalType */
-			{FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL, }, /* frame.dwFrameInterval */
-		},
-#endif
-
-#ifdef MJPEG_SVGA
-		// ---- Class specific MJPEG VS Frame Descriptor ----
-		// 800 x 600 pixels, 15 fps. SVGA.
-		{
-			sizeof(USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1)), /* frame.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* frame.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FRAME_MJPEG, /* frame.bDescriptorSubType */
-			FRAME_INDEX_HS_MJPEG_SVGA, /* frame.bFrameIndex */
-			0x00, /* frame.bmCapabilities */
-			CAMERA_FRAME_WIDTH_SVGA, /* frame.wWidth */
-			CAMERA_FRAME_HEIGHT_SVGA, /* frame.wHeight */
-			FRAME_INDEX_HS_MJPEG_SVGA_SIZE * FRAME_INDEX_HS_MJPEG_SVGA_FRAME_RATE * 8, /* frame.dwMinBitRate */
-			FRAME_INDEX_HS_MJPEG_SVGA_SIZE * FRAME_INDEX_HS_MJPEG_SVGA_FRAME_RATE * 8, /* frame.dwMaxBitRate */
-			FRAME_INDEX_HS_MJPEG_SVGA_SIZE, /* frame.dwMaxVideoFrameBufferSize */
-			FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL, /* frame.dwDefaultFrameInterval */
-			0x01, /* frame.bFrameIntervalType */
-			{FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL, }, /* frame.dwFrameInterval */
-		},
-#endif
-
-#ifdef MJPEG_XGA
-		// ---- Class specific MJPEG VS Frame Descriptor ----
-		// 1024 x 768 pixels, 15 fps. XGA.
-		{
-			sizeof(USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1)), /* frame.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* frame.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FRAME_MJPEG, /* frame.bDescriptorSubType */
-			FRAME_INDEX_HS_MJPEG_XGA, /* frame.bFrameIndex */
-			0x00, /* frame.bmCapabilities */
-			CAMERA_FRAME_WIDTH_XGA, /* frame.wWidth */
-			CAMERA_FRAME_HEIGHT_XGA, /* frame.wHeight */
-			FRAME_INDEX_HS_MJPEG_XGA_SIZE * FRAME_INDEX_HS_MJPEG_XGA_FRAME_RATE * 8, /* frame.dwMinBitRate */
-			FRAME_INDEX_HS_MJPEG_XGA_SIZE * FRAME_INDEX_HS_MJPEG_XGA_FRAME_RATE * 8, /* frame.dwMaxBitRate */
-			FRAME_INDEX_HS_MJPEG_XGA_SIZE, /* frame.dwMaxVideoFrameBufferSize */
-			FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL, /* frame.dwDefaultFrameInterval */
-			0x01, /* frame.bFrameIntervalType */
-			{FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL, }, /* frame.dwFrameInterval */
-		},
-#endif
-
-#ifdef MJPEG_SXGA
-		// ---- Class specific MJPEG VS Frame Descriptor ----
-		// 1280 x 1024 pixels, 15 fps. SXGA.
-		{
-			sizeof(USB_UVC_VS_MJPEGVideoFrameDescriptorDiscrete(1)), /* frame.bLength */
-			USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* frame.bDescriptorType */
-			USB_UVC_DESCRIPTOR_SUBTYPE_VS_FRAME_MJPEG, /* frame.bDescriptorSubType */
-			FRAME_INDEX_HS_MJPEG_SXGA, /* frame.bFrameIndex */
-			0x00, /* frame.bmCapabilities */
-			CAMERA_FRAME_WIDTH_SXGA, /* frame.wWidth */
-			CAMERA_FRAME_HEIGHT_SXGA, /* frame.wHeight */
-			FRAME_INDEX_HS_MJPEG_SXGA_SIZE * FRAME_INDEX_HS_MJPEG_SXGA_FRAME_RATE * 8, /* frame.dwMinBitRate */
-			FRAME_INDEX_HS_MJPEG_SXGA_SIZE * FRAME_INDEX_HS_MJPEG_SXGA_FRAME_RATE * 8, /* frame.dwMaxBitRate */
-			FRAME_INDEX_HS_MJPEG_SXGA_SIZE, /* frame.dwMaxVideoFrameBufferSize */
-			FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL, /* frame.dwDefaultFrameInterval */
-			0x01, /* frame.bFrameIntervalType */
-			{FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL, }, /* frame.dwFrameInterval */
-		},
-#endif
-
-		// ---- Class specific Color Matching Descriptor ----
-		{
-				sizeof(USB_UVC_ColorMatchingDescriptor),  /* desc.bLength */
-				USB_UVC_DESCRIPTOR_TYPE_CS_INTERFACE, /* desc.bDescriptorType */
-				USB_UVC_DESCRIPTOR_SUBTYPE_VS_COLORFORMAT, /* desc.bDescriptorSubType */
-				1, /* desc.bColorPrimaries */
-				1, /* desc.bTransferCharacteristics */
-				4, /* desc.bMatrixCoefficients */
-		},
-
-#endif // PAYLOAD_MJPEG
 	},
 
 #ifndef USB_ENDPOINT_USE_ISOC
@@ -1933,7 +1382,6 @@ USB_UVC_VideoProbeAndCommitControls uvc_commit;
  */
 const USB_UVC_VideoProbeAndCommitControls uvc_probe_def_hs = {
 		USB_UVC_VS_PROBE_COMMIT_CONTROL_BMHINT_FRAMINGINFO, /* bmHint */
-#if defined(PAYLOAD_UNCOMPRESSED) /* Default is uncompressed */
 		FORMAT_INDEX_TYPE_UNCOMPRESSED, /*  bFormatIndex */
 		FRAME_INDEX_HS_UC_MIN, /*  bFrameIndex */
 		FRAME_INDEX_HS_UC_MIN_FRAME_INTERVAL, /*  dwFrameInterval */
@@ -1944,20 +1392,6 @@ const USB_UVC_VideoProbeAndCommitControls uvc_probe_def_hs = {
 		0, /*  wDelay */
 		FRAME_INDEX_HS_UC_MIN_SIZE, /*  dwMaxVideoFrameSize */
 		FRAME_INDEX_HS_UC_MIN_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header), /*  dwMaxPayloadTransferSize */
-#elif defined(PAYLOAD_MJPEG) /* If no uncompressed support default to MJPEG */
-		FORMAT_INDEX_TYPE_MJPEG, /*  bFormatIndex */
-		FRAME_INDEX_HS_MJPEG_MIN, /*  bFrameIndex */
-		FRAME_INDEX_HS_MJPEG_MIN_FRAME_INTERVAL, /*  dwFrameInterval */
-		0, /*  wKeyFrameRate */
-		0, /*  wPFrameRate */
-		0, /*  wCompQuality */
-		0, /*  wCompWindowSize */
-		0, /*  wDelay */
-		FRAME_INDEX_HS_MJPEG_MIN_SIZE, /*  dwMaxVideoFrameSize */
-		FRAME_INDEX_HS_MJPEG_MIN_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header), /*  dwMaxPayloadTransferSize */
-#else
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-#endif
 		CLK_FREQ_48MHz,    /*  dwClockFrequency */
 		USB_UVC_VS_PROBE_COMMIT_CONTROL_BMFRAMINGINFO_FRAMEIDFIELD |
 			USB_UVC_VS_PROBE_COMMIT_CONTROL_BMFRAMINGINFO_EOFFIELD, /*  bmFramingInfo */
@@ -2005,9 +1439,9 @@ volatile size_t i2cs_dev_buffer_size;
 volatile uint8_t i2cs_dev_buffer_ptr;
 volatile uint8_t i2cs_dev_registers[3] =
 {
-        0,
-        0,
-        0
+	0,
+	0,
+	0
 };
 
 volatile uint8_t led1 = 0xFF;
@@ -2049,51 +1483,50 @@ void update_leds(void) {
 
 void i2cs_dev_ISR(void)
 {
-    static uint8_t rx_addr = 1;
-    uint8_t status;
+	static uint8_t rx_addr = 1;
+	uint8_t status;
 
-    if (i2cs_is_interrupted(MASK_I2CS_FIFO_INT_PEND_I2C_INT))
-    {
-        status = i2cs_get_status();
+	if (i2cs_is_interrupted(MASK_I2CS_FIFO_INT_PEND_I2C_INT))
+	{
+		status = i2cs_get_status();
 
-        /* For a write transaction... */
-        if(status & MASK_I2CS_STATUS_RX_REQ)
-        {
-            /* If we are wanting for the Write address to appear... */
-            if (rx_addr)
-            {
-                /* Read in the initial offset to read/write... */
-                rx_addr = 0;
-                i2cs_read(&i2cs_dev_buffer_ptr, 1);
-            }
-            else
-            {
-                /* Write the byte to the register buffer... */
-                i2cs_read(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
-                i2cs_dev_buffer_ptr++;
-            }
+		/* For a write transaction... */
+		if(status & MASK_I2CS_STATUS_RX_REQ)
+		{
+			/* If we are wanting for the Write address to appear... */
+			if (rx_addr)
+			{
+				/* Read in the initial offset to read/write... */
+				rx_addr = 0;
+				i2cs_read(&i2cs_dev_buffer_ptr, 1);
+			}
+			else
+			{
+				/* Write the byte to the register buffer... */
+				i2cs_read(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
+				i2cs_dev_buffer_ptr++;
+			}
 
-        }
-        /* For a read transaction... */
-        else if(status & MASK_I2CS_STATUS_TX_REQ)
-        {
-            /* Write the byte to the I2C bus... */
-            i2cs_write(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
-            i2cs_dev_buffer_ptr++;
+		}
+		/* For a read transaction... */
+		else if(status & MASK_I2CS_STATUS_TX_REQ)
+		{
+			/* Write the byte to the I2C bus... */
+			i2cs_write(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
+			i2cs_dev_buffer_ptr++;
+		}
 
-        }
+		/* For the completion of a transaction... */
+		else if (status & (MASK_I2CS_STATUS_REC_FIN | MASK_I2CS_STATUS_SEND_FIN))
+		{
+			/* Finished transaction, reset... */
+			rx_addr = 1;
+		}
 
-        /* For the completion of a transaction... */
-        else if (status & (MASK_I2CS_STATUS_REC_FIN | MASK_I2CS_STATUS_SEND_FIN))
-        {
-        	/* Finished transaction, reset... */
-            rx_addr = 1;
-        }
-
-        /* Wrap around */
-        if (i2cs_dev_buffer_ptr > i2cs_dev_buffer_size)
-            i2cs_dev_buffer_ptr = 0;
-    }
+		/* Wrap around */
+		if (i2cs_dev_buffer_ptr > i2cs_dev_buffer_size)
+			i2cs_dev_buffer_ptr = 0;
+	}
 }
 
 
@@ -2133,14 +1566,14 @@ static int check =0;
 
 void cam_ISR(void)
 {
-    static uint8_t *pbuffer;
-    static uint16_t len;
+	static uint8_t *pbuffer;
+	static uint16_t len;
 
 	// Synchronise on the start of a frame.
-    // If we are waiting for the VSYNC signal then flush all data.
+	// If we are waiting for the VSYNC signal then flush all data.
 	if (camera_vsync != 0)
 	{
-	    // Read in a line of data from the camera.
+		// Read in a line of data from the camera.
 		len = cam_available();
 		if (len >= sample_threshold)
 		{
@@ -2180,12 +1613,12 @@ void cam_ISR(void)
 
 void vsync_ISR(void)
 {
-    if (gpio_is_interrupted(8))
-    {
+	if (gpio_is_interrupted(8))
+	{
 		// Signal start of frame received. Will now wait for line data.
-        camera_vsync = 1;
-        check = 0;
-    }
+		camera_vsync = 1;
+		check = 0;
+	}
 }
 
 void wait_for_vsync()
@@ -2515,7 +1948,6 @@ int8_t class_vs_check_probecommit(USB_UVC_VideoProbeAndCommitControls *probecomm
 		// Check for valid format index set.
 		if (probecommit->bFormatIndex == FORMAT_INDEX_TYPE_UNCOMPRESSED)
 		{
-#ifdef PAYLOAD_UNCOMPRESSED
 			// Check for valid frame index set.
 			if (probecommit->bmFramingInfo & USB_UVC_VS_PROBE_COMMIT_CONTROL_BMHINT_FRAMINGINFO)
 			{
@@ -2530,12 +1962,6 @@ int8_t class_vs_check_probecommit(USB_UVC_VideoProbeAndCommitControls *probecomm
 					break;
 				case FRAME_INDEX_HS_UC_VGA:
 					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_UC_VGA_FRAME_INTERVAL)
-					{
-						status = USBD_OK;
-					}
-					break;
-				case FRAME_INDEX_HS_UC_SVGA:
-					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL)
 					{
 						status = USBD_OK;
 					}
@@ -2560,89 +1986,10 @@ int8_t class_vs_check_probecommit(USB_UVC_VideoProbeAndCommitControls *probecomm
 				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_UC_VGA_SIZE;
 				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_UC_VGA_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
 				break;
-			case FRAME_INDEX_HS_UC_SVGA:
-				probecommit->dwFrameInterval = FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL;
-				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_UC_SVGA_SIZE;
-				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_UC_SVGA_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				break;
 			}
-#endif // PAYLOAD_UNCOMPRESSED
 		}
 		else if (probecommit->bFormatIndex == FORMAT_INDEX_TYPE_MJPEG)
 		{
-#ifdef PAYLOAD_MJPEG
-			if (probecommit->bmFramingInfo & USB_UVC_VS_PROBE_COMMIT_CONTROL_BMHINT_FRAMINGINFO)
-			{
-				// If framing info hint is set then check frame interval is supported.
-				switch (probecommit->bFrameIndex)
-				{
-				case FRAME_INDEX_HS_MJPEG_QVGA:
-					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_QVGA_FRAME_INTERVAL)
-					{
-						status = USBD_OK;
-					}
-					break;
-				case FRAME_INDEX_HS_MJPEG_VGA:
-					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL)
-					{
-						status = USBD_OK;
-					}
-					break;
-				case FRAME_INDEX_HS_MJPEG_SVGA:
-					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL)
-					{
-						status = USBD_OK;
-					}
-					break;
-				case FRAME_INDEX_HS_MJPEG_XGA:
-					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL)
-					{
-						status = USBD_OK;
-					}
-					break;
-				case FRAME_INDEX_HS_MJPEG_SXGA:
-					if (probecommit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL)
-					{
-						status = USBD_OK;
-					}
-					break;
-				}
-			}
-			else
-			{
-				status = USBD_OK;
-			}
-
-			// Set required parts of structure depending on the frame index.
-			switch (probecommit->bFrameIndex)
-			{
-			case FRAME_INDEX_HS_MJPEG_QVGA:
-				probecommit->dwFrameInterval = FRAME_INDEX_HS_MJPEG_QVGA_FRAME_INTERVAL;
-				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_QVGA_SIZE;
-				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				break;
-			case FRAME_INDEX_HS_MJPEG_VGA:
-				probecommit->dwFrameInterval = FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL;
-				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_VGA_SIZE;
-				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				break;
-			case FRAME_INDEX_HS_MJPEG_SVGA:
-				probecommit->dwFrameInterval = FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL;
-				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_SVGA_SIZE;
-				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				break;
-			case FRAME_INDEX_HS_MJPEG_XGA:
-				probecommit->dwFrameInterval = FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL;
-				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_XGA_SIZE;
-				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				break;
-			case FRAME_INDEX_HS_MJPEG_SXGA:
-				probecommit->dwFrameInterval = FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL;
-				probecommit->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_SXGA_SIZE;
-				probecommit->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				break;
-			}
-#endif // PAYLOAD_MJPEG
 		}
 	}
 
@@ -2671,7 +2018,6 @@ int8_t class_vs_probe_min_max(USB_UVC_VideoProbeAndCommitControls *uvc_probe_ret
 		// Check for valid format index set.
 		if (uvc_probe_cur->bFormatIndex == FORMAT_INDEX_TYPE_UNCOMPRESSED)
 		{
-#ifdef PAYLOAD_UNCOMPRESSED
 
 			// Set required parts of structure depending on the frame index.
 			// There are only one minimum and maximum value per frame and format.
@@ -2690,56 +2036,10 @@ int8_t class_vs_probe_min_max(USB_UVC_VideoProbeAndCommitControls *uvc_probe_ret
 				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_UC_VGA_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
 				status = USBD_OK;
 				break;
-			case FRAME_INDEX_HS_UC_SVGA:
-				uvc_probe_ret->dwFrameInterval = FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL;
-				uvc_probe_ret->dwMaxVideoFrameSize = FRAME_INDEX_HS_UC_SVGA_SIZE;
-				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_UC_SVGA_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				status = USBD_OK;
-				break;
 			}
-#endif // PAYLOAD_UNCOMPRESSED
 		}
 		else if (uvc_probe_cur->bFormatIndex == FORMAT_INDEX_TYPE_MJPEG)
 		{
-#ifdef PAYLOAD_MJPEG
-
-			// Set required parts of structure depending on the frame index.
-			// There are only one minimum and maximum value per frame and format.
-			// This greatly simplifies calculating the minumum and maximum values.
-			switch (uvc_probe_cur->bFrameIndex)
-			{
-			case FRAME_INDEX_HS_MJPEG_QVGA:
-				uvc_probe_ret->dwFrameInterval = FRAME_INDEX_HS_MJPEG_QVGA_FRAME_INTERVAL;
-				uvc_probe_ret->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_QVGA_SIZE;
-				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				status = USBD_OK;
-				break;
-			case FRAME_INDEX_HS_MJPEG_VGA:
-				uvc_probe_ret->dwFrameInterval = FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL;
-				uvc_probe_ret->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_VGA_SIZE;
-				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				status = USBD_OK;
-				break;
-			case FRAME_INDEX_HS_MJPEG_SVGA:
-				uvc_probe_ret->dwFrameInterval = FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL;
-				uvc_probe_ret->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_SVGA_SIZE;
-				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				status = USBD_OK;
-				break;
-			case FRAME_INDEX_HS_MJPEG_XGA:
-				uvc_probe_ret->dwFrameInterval = FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL;
-				uvc_probe_ret->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_XGA_SIZE;
-				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				status = USBD_OK;
-				break;
-			case FRAME_INDEX_HS_MJPEG_SXGA:
-				uvc_probe_ret->dwFrameInterval = FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL;
-				uvc_probe_ret->dwMaxVideoFrameSize = FRAME_INDEX_HS_MJPEG_SXGA_SIZE;
-				uvc_probe_ret->dwMaxPayloadTransferSize = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE + sizeof(USB_UVC_Payload_Header);
-				status = USBD_OK;
-				break;
-			}
-#endif // PAYLOAD_MJPEG
 		}
 	}
 
@@ -2755,9 +2055,7 @@ int8_t class_vs_set_commit(USB_UVC_VideoProbeAndCommitControls *commit)
 {
 	int8_t status = USBD_ERR_NOT_SUPPORTED;
 	// Format bits per pixel.
-#ifdef PAYLOAD_UNCOMPRESSED
 	uint16_t bbp = 0;
-#endif // PAYLOAD_UNCOMPRESSED
 
 	uvc_error_control = USB_UVC_REQUEST_ERROR_CODE_CONTROL_INVALID_REQUEST;
 
@@ -2770,7 +2068,6 @@ int8_t class_vs_set_commit(USB_UVC_VideoProbeAndCommitControls *commit)
 		{
 			if (commit->bFormatIndex == FORMAT_INDEX_TYPE_UNCOMPRESSED)
 			{
-#ifdef PAYLOAD_UNCOMPRESSED
 				bbp = FORMAT_UC_BBP;
 
 				// Check for valid frame index set.
@@ -2793,12 +2090,6 @@ int8_t class_vs_set_commit(USB_UVC_VideoProbeAndCommitControls *commit)
 								status = USBD_OK;
 							}
 							break;
-						case FRAME_INDEX_HS_UC_SVGA:
-							if (commit->dwFrameInterval == FRAME_INDEX_HS_UC_SVGA_FRAME_INTERVAL)
-							{
-								status = USBD_OK;
-							}
-							break;
 						}
 					}
 					else
@@ -2806,127 +2097,31 @@ int8_t class_vs_set_commit(USB_UVC_VideoProbeAndCommitControls *commit)
 						status = USBD_OK;
 					}
 
-					camera_stop();
+//					camera_stop();
 
 					// Set required parts of structure depending on the frame index.
 					switch (commit->bFrameIndex)
 					{
 					case FRAME_INDEX_HS_UC_QVGA:
-						camera_set(CAMERA_MODE_QVGA, FRAME_INDEX_HS_UC_QVGA_FRAME_RATE, CAMERA_FORMAT_UNCOMPRESSED);
+//						camera_set(CAMERA_MODE_QVGA, FRAME_INDEX_HS_UC_QVGA_FRAME_RATE, CAMERA_FORMAT_UNCOMPRESSED);
 						sample_width = CAMERA_FRAME_WIDTH_QVGA;
 						frame_height = CAMERA_FRAME_HEIGHT_QVGA;
 						frame_size = FRAME_INDEX_HS_UC_QVGA_SIZE;
 						break;
 					case FRAME_INDEX_HS_UC_VGA:
-						camera_set(CAMERA_MODE_VGA, FRAME_INDEX_HS_UC_VGA_FRAME_RATE, CAMERA_FORMAT_UNCOMPRESSED);
+//						camera_set(CAMERA_MODE_VGA, FRAME_INDEX_HS_UC_VGA_FRAME_RATE, CAMERA_FORMAT_UNCOMPRESSED);
 						sample_width = CAMERA_FRAME_WIDTH_VGA;
 						frame_height = CAMERA_FRAME_HEIGHT_VGA;
 						frame_size = FRAME_INDEX_HS_UC_VGA_SIZE;
-						break;
-					case FRAME_INDEX_HS_UC_SVGA:
-						camera_set(CAMERA_MODE_SVGA, FRAME_INDEX_HS_UC_SVGA_FRAME_RATE, CAMERA_FORMAT_UNCOMPRESSED);
-						sample_width = CAMERA_FRAME_WIDTH_SVGA;
-						frame_height = CAMERA_FRAME_HEIGHT_SVGA;
-						frame_size = FRAME_INDEX_HS_UC_SVGA_SIZE;
 						break;
 					}
 
 					// Set globals required for sample acquisition.
 					sample_length = sample_width * bbp;
 				}
-#endif // PAYLOAD_UNCOMPRESSED
 			}
 			else if (commit->bFormatIndex == FORMAT_INDEX_TYPE_MJPEG)
 			{
-#ifdef PAYLOAD_MJPEG
-				// Check for valid frame index set.
-				if ((commit->bFrameIndex >= FRAME_INDEX_HS_MJPEG_MIN) && (commit->bFrameIndex <= FRAME_INDEX_HS_MJPEG_MAX))
-				{
-					if (commit->bmFramingInfo & USB_UVC_VS_PROBE_COMMIT_CONTROL_BMHINT_FRAMINGINFO)
-					{
-						// If framing info hint is set then check frame interval is supported.
-						switch (commit->bFrameIndex)
-						{
-						case FRAME_INDEX_HS_MJPEG_QVGA:
-							if (commit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_QVGA_FRAME_INTERVAL)
-							{
-								status = USBD_OK;
-							}
-							break;
-						case FRAME_INDEX_HS_MJPEG_VGA:
-							if (commit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_VGA_FRAME_INTERVAL)
-							{
-								status = USBD_OK;
-							}
-							break;
-						case FRAME_INDEX_HS_MJPEG_SVGA:
-							if (commit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_SVGA_FRAME_INTERVAL)
-							{
-								status = USBD_OK;
-							}
-							break;
-						case FRAME_INDEX_HS_MJPEG_XGA:
-							if (commit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_XGA_FRAME_INTERVAL)
-							{
-								status = USBD_OK;
-							}
-							break;
-						case FRAME_INDEX_HS_MJPEG_SXGA:
-							if (commit->dwFrameInterval == FRAME_INDEX_HS_MJPEG_SXGA_FRAME_INTERVAL)
-							{
-								status = USBD_OK;
-							}
-							break;
-						}
-					}
-					else
-					{
-						status = USBD_OK;
-					}
-
-					// Set required parts of structure depending on the frame index.
-					switch (commit->bFrameIndex)
-					{
-					case FRAME_INDEX_HS_MJPEG_QVGA:
-						camera_set(CAMERA_MODE_QVGA, FRAME_INDEX_HS_MJPEG_QVGA_FRAME_RATE, CAMERA_FORMAT_MJPEG);
-						sample_width = CAMERA_FRAME_WIDTH_QVGA;
-						frame_height = CAMERA_FRAME_HEIGHT_QVGA;
-						frame_size = FRAME_INDEX_HS_MJPEG_QVGA_SIZE;
-						sample_length = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE;
-						break;
-					case FRAME_INDEX_HS_MJPEG_VGA:
-						camera_set(CAMERA_MODE_VGA, FRAME_INDEX_HS_MJPEG_VGA_FRAME_RATE, CAMERA_FORMAT_MJPEG);
-						sample_width = CAMERA_FRAME_WIDTH_VGA;
-						frame_height = CAMERA_FRAME_HEIGHT_VGA;
-						frame_size = FRAME_INDEX_HS_MJPEG_VGA_SIZE;
-						sample_length = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE;
-						break;
-					case FRAME_INDEX_HS_MJPEG_SVGA:
-						camera_set(CAMERA_MODE_SVGA, FRAME_INDEX_HS_MJPEG_SVGA_FRAME_RATE, CAMERA_FORMAT_MJPEG);
-						sample_width = CAMERA_FRAME_WIDTH_SVGA;
-						frame_height = CAMERA_FRAME_HEIGHT_SVGA;
-						frame_size = FRAME_INDEX_HS_MJPEG_SVGA_SIZE;
-						sample_length = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE;
-						break;
-					case FRAME_INDEX_HS_MJPEG_XGA:
-						camera_set(CAMERA_MODE_XGA, FRAME_INDEX_HS_MJPEG_XGA_FRAME_RATE, CAMERA_FORMAT_MJPEG);
-						sample_width = CAMERA_FRAME_WIDTH_XGA;
-						frame_height = CAMERA_FRAME_HEIGHT_XGA;
-						frame_size = FRAME_INDEX_HS_MJPEG_XGA_SIZE;
-						sample_length = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE;
-						break;
-					case FRAME_INDEX_HS_MJPEG_SXGA:
-						camera_set(CAMERA_MODE_SXGA, FRAME_INDEX_HS_MJPEG_SXGA_FRAME_RATE, CAMERA_FORMAT_MJPEG);
-						sample_width = CAMERA_FRAME_WIDTH_SXGA;
-						frame_height = CAMERA_FRAME_HEIGHT_SXGA;
-						frame_size = FRAME_INDEX_HS_MJPEG_SXGA_SIZE;
-						sample_length = FRAME_INDEX_HS_MJPEG_TRANSFER_SIZE;
-						break;
-					}
-
-					// Set globals required for sample acquisition.
-				}
-#endif // PAYLOAD_MJPEG
 			}
 		}
 	}
@@ -3596,7 +2791,7 @@ void reset_cb(uint8_t status)
 	USBD_DFU_reset();
 	BRIDGE_DEBUG_PRINTF("Reset\r\n");
 
-	camera_stop();
+//	camera_stop();
 
 	return;
 }
@@ -3608,7 +2803,7 @@ uint8_t usbd_testing(void)
 
 	uint16_t camera_tx_buffer_line = 0;
 	uint16_t camera_tx_data_avail;
-	uint32_t camera_tx_frame_size;
+	uint32_t camera_tx_frame_size = 0;
 	uint8_t *pstart = NULL;
 	uint8_t *pmark;
 	uint8_t frame_active = 0;
@@ -3629,9 +2824,9 @@ uint8_t usbd_testing(void)
 	static USB_UVC_Payload_Header hdr;
 
 	// Header length always stays the same.
-    hdr.bHeaderLength = sizeof(USB_UVC_Payload_Header);
+	hdr.bHeaderLength = sizeof(USB_UVC_Payload_Header);
 
-    memset(&usb_ctx, 0, sizeof(usb_ctx));
+	memset(&usb_ctx, 0, sizeof(usb_ctx));
 
 	usb_ctx.standard_req_cb = NULL;
 	usb_ctx.get_descriptor_cb = standard_req_get_descriptor;
@@ -3700,7 +2895,7 @@ uint8_t usbd_testing(void)
 
 	BRIDGE_DEBUG_PRINTF("Starting\r\n");
 
-    camera_state_change = CAMERA_STREAMING_OFF;
+	camera_state_change = CAMERA_STREAMING_OFF;
 
 	for (;;)
 	{
@@ -3734,13 +2929,13 @@ uint8_t usbd_testing(void)
 								BRIDGE_DEBUG_PRINTF("Camera starting (sample length %d frame %ld)\r\n", sample_length, frame_size);
 
 								cam_set_threshold(sample_length);
-						        sample_threshold = sample_length;
-						        camera_tx_frame_size = 0;
-							    frame_active = 0;
-							    camera_tx_buffer_line = 0;
+								sample_threshold = sample_length;
+								camera_tx_frame_size = 0;
+								frame_active = 0;
+								camera_tx_buffer_line = 0;
 
 								cam_start(sample_length);
-								camera_start();
+//								camera_start();
 								wait_for_vsync();
 								cam_enable_interrupt();
 #ifndef USB_ENDPOINT_USE_ISOC
@@ -3750,7 +2945,7 @@ uint8_t usbd_testing(void)
 							// Stream stopping.
 							else // CAMERA_STREAMING_STOP or zero-bandwith interface selected.
 							{
-								camera_stop();
+//								camera_stop();
 
 								cam_disable_interrupt();
 								cam_stop();
@@ -3997,14 +3192,14 @@ uint8_t usbd_testing(void)
 int main(void)
 {
 #ifdef USB_INTERFACE_USE_STARTUPDFU
-    STARTUP_DFU();
+	STARTUP_DFU();
 #endif // USB_INTERFACE_USE_STARTUPDFU
 
 	sys_reset_all();
 	sys_disable(sys_device_camera);
-    sys_disable(sys_device_i2c_master);
-    sys_disable(sys_device_i2c_slave);
-    sys_disable(sys_device_usb_device);
+	sys_disable(sys_device_i2c_master);
+	sys_disable(sys_device_i2c_slave);
+	sys_disable(sys_device_usb_device);
 
 	/* Enable the UART Device... */
 	sys_enable(sys_device_uart0);
@@ -4021,7 +3216,7 @@ int main(void)
 
 	/* Print out a welcome message... */
 	BRIDGE_DEBUG_PRINTF("\x1B[2J" /* ANSI/VT100 - Clear the Screen */
-			"\x1B[H"  /* ANSI/VT100 - Move Cursor to Home */
+	                    "\x1B[H"  /* ANSI/VT100 - Move Cursor to Home */
 	);
 
 	BRIDGE_DEBUG_PRINTF("(C) Copyright 2016, Bridgetek Pte Ltd. \r\n");
@@ -4046,48 +3241,45 @@ int main(void)
 	 * from the USB host. */
 	interrupt_attach(interrupt_0, (int8_t)interrupt_0, powermanagement_ISR);
 
-    /* Set up the Camera Interface */
-    cam_disable_interrupt();
-    cam_stop();
-    cam_flush();
+	/* Set up the Camera Interface */
+	cam_disable_interrupt();
+	cam_stop();
+	cam_flush();
 
-    gpio_function(6, pad_cam_xclk);  /* XCLK */
-    gpio_function(7, pad_cam_pclk);  /* PCLK */
-    //gpio_function(8, pad_cam_vd);  /* VD */
-    gpio_function(9, pad_cam_hd);  /* HD */
-    gpio_function(10, pad_cam_d7); /* D7 */
-    gpio_function(11, pad_cam_d6); /* D6 */
-    gpio_function(12, pad_cam_d5); /* D5 */
-    gpio_function(13, pad_cam_d4); /* D4 */
-    gpio_function(14, pad_cam_d3); /* D3 */
-    gpio_function(15, pad_cam_d2); /* D2 */
-    gpio_function(16, pad_cam_d1); /* D1 */
-    gpio_function(17, pad_cam_d0); /* D0 */
-    sys_enable(sys_device_camera);
+	gpio_function(6, pad_cam_xclk);  /* XCLK */
+	gpio_function(7, pad_cam_pclk);  /* PCLK */
+	//gpio_function(8, pad_cam_vd);  /* VD */
+	gpio_function(9, pad_cam_hd);  /* HD */
+	gpio_function(10, pad_cam_d7); /* D7 */
+	gpio_function(11, pad_cam_d6); /* D6 */
+	gpio_function(12, pad_cam_d5); /* D5 */
+	gpio_function(13, pad_cam_d4); /* D4 */
+	gpio_function(14, pad_cam_d3); /* D3 */
+	gpio_function(15, pad_cam_d2); /* D2 */
+	gpio_function(16, pad_cam_d1); /* D1 */
+	gpio_function(17, pad_cam_d0); /* D0 */
+	sys_enable(sys_device_camera);
 
-    /* Set VD as a GPIO input */
-    gpio_function(8, pad_gpio8);
-    gpio_dir(8, pad_dir_input);
-    gpio_interrupt_enable(8, gpio_int_edge_falling); /* VD */
-    interrupt_attach(interrupt_gpio, (uint8_t)interrupt_gpio, vsync_ISR);
+	/* Set VD as a GPIO input */
+	gpio_function(8, pad_gpio8);
+	gpio_dir(8, pad_dir_input);
+	gpio_interrupt_enable(8, gpio_int_edge_falling); /* VD */
+	interrupt_attach(interrupt_gpio, (uint8_t)interrupt_gpio, vsync_ISR);
 
-    /* Set up I2C */
-    sys_enable(sys_device_i2c_master);
-    sys_enable(sys_device_i2c_slave);
+	/* Set up I2C */
+	sys_enable(sys_device_i2c_master);
+	sys_enable(sys_device_i2c_slave);
 
-    gpio_function(44, pad_i2c0_scl); /* I2C0_SCL */
-    gpio_function(45, pad_i2c0_sda); /* I2C0_SDA */
-    gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
-    gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
-    gpio_pull(46, pad_pull_none);
-    gpio_pull(47, pad_pull_none);
+	gpio_function(44, pad_i2c0_scl); /* I2C0_SCL */
+	gpio_function(45, pad_i2c0_sda); /* I2C0_SDA */
+	gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
+	gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
+	gpio_pull(46, pad_pull_none);
+	gpio_pull(47, pad_pull_none);
 
-	/* Set the I2C Master pins to channel 1 */
-//	sys_i2c_swop(1);
+	i2cm_init(I2CM_NORMAL_SPEED, 100000);
 
-    i2cm_init(I2CM_NORMAL_SPEED, 100000);
-
-    /* Initialise the I2C Slave hardware... */
+	/* Initialise the I2C Slave hardware... */
 	i2cs_init(0x38);
 	/* Set up the handler for i2cs_dev... */
 	i2cs_dev_buffer = i2cs_dev_registers;
@@ -4136,31 +3328,20 @@ int main(void)
 
 	update_leds();
 
+	BRIDGE_DEBUG_PRINTF("Camera initialisation must be done by external device (e.g. Raspberry Pi)\r\n");
 
-    BRIDGE_DEBUG_PRINTF("Initialising camera...\r\n");
+	/* Clock data in when VREF is low and HREF is high */
+	cam_init(cam_trigger_mode_1, cam_clock_pol_raising);
 
-    // Initialise the camera hardware.
-    if (camera_init())
-    {
-    	BRIDGE_DEBUG_PRINTF("Camera init success\r\n");
+	interrupt_attach(interrupt_camera, (uint8_t)interrupt_camera, cam_ISR);
 
-		/* Clock data in when VREF is low and HREF is high */
-		cam_init(cam_trigger_mode_1, cam_clock_pol_raising);
+	interrupt_enable_globally();
 
-		interrupt_attach(interrupt_camera, (uint8_t)interrupt_camera, cam_ISR);
+	usbd_testing();
 
-		interrupt_enable_globally();
+	interrupt_disable_globally();
 
-		usbd_testing();
-
-		interrupt_disable_globally();
-    }
-    else
-    {
-    	BRIDGE_DEBUG_PRINTF("Camera not found\r\n");
-    }
-
-    BRIDGE_DEBUG_PRINTF("Done..\r\n");
+	BRIDGE_DEBUG_PRINTF("Done..\r\n");
 
 	// Wait forever...
 	for (;;);

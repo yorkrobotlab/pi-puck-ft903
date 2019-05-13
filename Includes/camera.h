@@ -45,32 +45,11 @@
 #define SOURCES_CAMERA_H_
 
 /**
- @brief Supported camera interfaces.
- */
-//@{
-#define CAMERA_OV5640 1
-#define CAMERA_OV965X 2
-#define CAMERA_PO6030 3
-#define CAMERA_PO8030 4
-//@}
-
-/**
  @brief Resolution definitions for camera interface.
  */
 //@{
 #define CAMERA_MODE_QVGA 1
 #define CAMERA_MODE_VGA 2
-#define CAMERA_MODE_SVGA 3
-#define CAMERA_MODE_XGA 4
-#define CAMERA_MODE_SXGA 5
-//@}
-
-/**
- @brief Output format definitions for camera interface.
- */
-//@{
-#define CAMERA_FORMAT_UNCOMPRESSED 1
-#define CAMERA_FORMAT_MJPEG 2
 //@}
 
 /**
@@ -80,16 +59,10 @@
 #define CAMERA_FRAME_WIDTH_QQVGA 160
 #define CAMERA_FRAME_WIDTH_QVGA 320
 #define CAMERA_FRAME_WIDTH_VGA 640
-#define CAMERA_FRAME_WIDTH_SVGA 800
-#define CAMERA_FRAME_WIDTH_XGA 1024
-#define CAMERA_FRAME_WIDTH_SXGA 1280
 
 #define CAMERA_FRAME_HEIGHT_QQVGA 120
 #define CAMERA_FRAME_HEIGHT_QVGA 240
 #define CAMERA_FRAME_HEIGHT_VGA 480
-#define CAMERA_FRAME_HEIGHT_SVGA 600
-#define CAMERA_FRAME_HEIGHT_XGA 768
-#define CAMERA_FRAME_HEIGHT_SXGA 1024
 //@}
 
 /**
