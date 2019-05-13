@@ -78,7 +78,7 @@ local.properties
 *.pydevproject
 
 # CDT-specific (C/C++ Development Tooling)
-.cproject
+#.cproject
 
 # CDT- autotools
 .autotools
@@ -114,7 +114,7 @@ local.properties
 
 ### Eclipse Patch ###
 # Eclipse Core
-.project
+#.project
 
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
