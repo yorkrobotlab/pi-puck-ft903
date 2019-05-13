@@ -1498,12 +1498,12 @@ void i2cs_dev_ISR(void)
 			{
 				/* Read in the initial offset to read/write... */
 				rx_addr = 0;
-				i2cs_read(&i2cs_dev_buffer_ptr, 1);
+				i2cs_read((uint8_t *)(&i2cs_dev_buffer_ptr), 1);
 			}
 			else
 			{
 				/* Write the byte to the register buffer... */
-				i2cs_read(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
+				i2cs_read((uint8_t *)(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr])), 1);
 				i2cs_dev_buffer_ptr++;
 			}
 
@@ -1512,7 +1512,7 @@ void i2cs_dev_ISR(void)
 		else if(status & MASK_I2CS_STATUS_TX_REQ)
 		{
 			/* Write the byte to the I2C bus... */
-			i2cs_write(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr]), 1);
+			i2cs_write((uint8_t *)(&(i2cs_dev_buffer[i2cs_dev_buffer_ptr])), 1);
 			i2cs_dev_buffer_ptr++;
 		}
 
