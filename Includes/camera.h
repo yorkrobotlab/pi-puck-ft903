@@ -45,11 +45,16 @@
 #define SOURCES_CAMERA_H_
 
 /**
- @brief Resolution definitions for camera interface.
- */
+ @brief Output format definitions for camera interface.
+ @details Uncompressed video is an uncompressed bitmap format which is
+ 	 encoded in YUV422 with a byte order of YUYV. This is supported only
+ 	 by DirectShow as an input format from a WebCam. It is not supported
+ 	 by Live555 (and derivatives such as VLC) as an input format.
+ 	 MJPEG format is Motion-JPEG and consists of a series of JPEG
+ 	 compressed frames. There is no inter-frame compression. */
 //@{
-#define CAMERA_MODE_QVGA 1
-#define CAMERA_MODE_VGA 2
+#define CAMERA_FORMAT_ANY 0
+#define CAMERA_FORMAT_UNCOMPRESSED 1
 //@}
 
 /**
@@ -67,24 +72,156 @@
 
 /**
  @brief Frame Rate definitions for camera interface.
- @details
+ @details Camera module to choose default frame rate for mode.
  */
 //@{
-#define CAMERA_FRAME_RATE_7_5 (15/2)
-#define CAMERA_FRAME_RATE_10 10
-#define CAMERA_FRAME_RATE_15 15
-#define CAMERA_FRAME_RATE_30 30
+#define CAMERA_FRAME_RATE_ANY 0
 //@}
 
 /**
- @brief Preferred line length for camera interface
- @details This is the line length of data from the camera where the
-  line length can be set. This should be small enough to fit inside
-  an isochronous transfer (including the UVC header) but not fall on
-  a max packet boundary for when bulk transfers are used.
+ @brief Definition of camera streaming state
  */
-//@{
-#define CAMERA_PREFERRED_LINE_LENGTH 960
-//@}
+#define CAMERA_STREAMING_OFF 0
+#define CAMERA_STREAMING_START 1
+#define CAMERA_STREAMING_STOP 2
+#define CAMERA_STREAMING_STARTED 3
+#define CAMERA_STREAMING_STOPPED 4
+
+/**
+ @brief Number of lines of image data to buffer.
+ @details This has to create a buffer large enough to buffer JPEG
+ 	 encoded and uncompressed data before it is transmitted.
+ 	 16kB is sufficient for reliability up to SVGA on a typical busy
+ 	 network.
+ */
+#define CAMERA_BUFFER_LENGTH (32 * 1024)
+
+typedef void (*CAMERA_start_stop)(void);
+typedef int8_t (*CAMERA_supports)(uint16_t width, uint16_t height, int8_t frame_rate, int8_t format);
+typedef int8_t (*CAMERA_set)(uint16_t width, uint16_t height, int8_t format,
+		int8_t *frame_rate, uint16_t *sample, uint32_t *frame);
+
+/**
+ @brief Camera Initialisation
+ @details Initialises the camera module registers.
+ @returns Return the hardware ID of the camera module.
+ */
+uint16_t camera_init(void);
+
+/**
+ @brief Camera Add
+ @details Adds camera mode support for a resolution, frame
+ 	 rate and output format.
+ */
+void camera_mode_add(uint16_t width, uint16_t height, int8_t frame_rate, int8_t format);
+
+/**
+ @brief Camera Mode Count
+ @details Counts the number of camera modes for an output format.
+ */
+uint8_t camera_mode_get_frame_count(int8_t format);
+
+/**
+ @brief Camera Mode Get Frame
+ @details Returns parameters for a particular camera mode and output format.
+ */
+uint8_t camera_mode_get_frame(int8_t format, int8_t count, uint16_t *width, uint16_t *height);
+uint8_t camera_mode_get_frame_rate_count(int8_t format, int8_t count);
+uint8_t camera_mode_get_frame_rate(int8_t format, int8_t count, int8_t frame_rate);
+
+/**
+ @brief Camera Mode Get Sample Size
+ @details Returns maximum sample size for that is a factor of the frame size.
+ */
+uint16_t camera_mode_get_sample_size(int8_t format, int8_t count, uint16_t max_sample);
+
+/**
+ @brief Camera Start
+ @details Starts streaming data from the Camera.
+ */
+void camera_start();
+
+/**
+ @brief Camera Stop
+ @details Stops streaming data from the Camera.
+ */
+void camera_stop(void);
+
+/**
+ @brief Camera Read
+ @details Read a sample line of data from the camera buffer.
+ @returns Pointer to the start of a camera buffer data line.
+ */
+uint8_t *camera_read(void);
+
+/**
+ @brief Camera Supports
+ @details Check that the camera module supports a resolution, frame
+ 	 rate and output format.
+ */
+int8_t camera_supports(uint16_t width, uint16_t height, int8_t frame_rate, int8_t format);
+
+/**
+ @brief Camera Setup
+ @details Configures the camera module to a resolution, frame rate and
+   output format.
+ */
+int8_t camera_set(uint16_t width, uint16_t height, int8_t frame_rate, int8_t format, uint16_t max_sample);
+
+/**
+ @brief      CAMERA state change
+ @details    Will flag that there is a state change to the camera.
+ **/
+void camera_set_state(int8_t state);
+
+/**
+ @brief      CAMERA get format
+ @details    Will return the current format of the camera.
+ **/
+uint8_t camera_get_format();
+
+/**
+ @brief      CAMERA get resolution
+ @details    Will return the current resolution of the camera.
+ **/
+uint8_t camera_get_resolution(uint16_t *width, uint16_t *height);
+
+/**
+ @brief      CAMERA get frame rate
+ @details    Will return the current frame rate of the camera.
+ **/
+uint8_t camera_get_frame_rate();
+
+/**
+ @brief      CAMERA state change
+ @details    Will return the current state of the camera.
+ **/
+int8_t camera_get_state();
+
+/**
+ @brief      CAMERA sample length setup
+ @details    Sets the sampling parameters of the current frame.
+ **/
+void camera_set_sample(uint16_t length);
+
+/**
+ @brief      CAMERA frame size
+ @details    Gets the frame size.
+ **/
+uint32_t camera_get_frame_size();
+
+/**
+ @brief      CAMERA sample length
+ @details    Gets the sampling parameters of the current frame.
+ **/
+uint16_t camera_get_sample();
+/**
+ @brief      CAMERA VSYNC detected
+ @details    Tells the camera interface code that VSYNC event has been
+ 	 	 	 detected.
+ **/
+void camera_vsync(volatile uint8_t *signal);
+
+#include "epuck_camera.h"
 
 #endif /* SOURCES_CAMERA_H_ */
