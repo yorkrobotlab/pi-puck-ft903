@@ -545,7 +545,7 @@ int main(void)
 	);
 
 	BRIDGE_DEBUG_PRINTF("-------------------------------------------------\r\n");
-	BRIDGE_DEBUG_PRINTF("Pi-puck FT903 Firmware v0.9.1\r\n");
+	BRIDGE_DEBUG_PRINTF("Pi-puck FT903 Firmware v0.9.2\r\n");
 	BRIDGE_DEBUG_PRINTF("USB Camera and I2C RGB LED controller\r\n");
 	BRIDGE_DEBUG_PRINTF("Built: %s %s\r\n", __DATE__, __TIME__);
 	BRIDGE_DEBUG_PRINTF("-------------------------------------------------\r\n");

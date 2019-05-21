@@ -104,8 +104,8 @@ DESCRIPTOR_QUALIFIER /*__at(STRING_DESCRIPTOR_LOCATION)*/ uint16_t string_descri
 		UNICODE_LEN(1), 0x0809, // 0809 = English (United Kingdom)
 		// String 1 (Manufacturer): "University of York"
 		UNICODE_LEN(18), L'U',L'n',L'i',L'v',L'e',L'r',L's',L'i',L't',L'y',L' ',L'o',L'f',L' ',L'Y',L'o',L'r',L'k',
-		// String 2 (Product): "e-puck Camera Interface"
-		UNICODE_LEN(23), L'e', L'-', L'p', L'u', L'c', L'k', L' ', L'C', L'a', L'm', L'e', L'r', L'a', L' ', L'I', L'n', L't', L'e', L'r', L'f', L'a', L'c', L'e',
+		// String 2 (Product): "Pi-puck Camera Interface"
+		UNICODE_LEN(24), L'P',L'i', L'-', L'p', L'u', L'c', L'k', L' ', L'C', L'a', L'm', L'e', L'r', L'a', L' ', L'I', L'n', L't', L'e', L'r', L'f', L'a', L'c', L'e',
 
 		// String 3 (Serial Number): "xxxx0001" where "xxxx" is the camera module ID.
 		UNICODE_LEN(8), L'x', L'x', L'x', L'x', L'0', L'0', L'0', L'1',
