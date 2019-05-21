@@ -160,6 +160,7 @@ uint32_t millis(void)
  */
 
 /* i2cs_dev variables */
+volatile uint8_t enter_dfu_mode = 0x00;
 volatile uint8_t *i2cs_dev_buffer;
 volatile size_t i2cs_dev_buffer_size;
 volatile uint8_t i2cs_dev_buffer_ptr;
@@ -254,6 +255,34 @@ void i2cs_dev_ISR(void)
 		/* Wrap around */
 		if (i2cs_dev_buffer_ptr > i2cs_dev_buffer_size)
 			i2cs_dev_buffer_ptr = 0;
+	}
+}
+
+void i2cs_dev_ISR_DFU(void)
+{
+	uint8_t status;
+
+	if (i2cs_is_interrupted(MASK_I2CS_FIFO_INT_PEND_I2C_INT))
+	{
+		status = i2cs_get_status();
+
+		/* For a write transaction... */
+		if(status & MASK_I2CS_STATUS_RX_REQ)
+		{
+			/* Write the byte to the buffer... */
+			i2cs_read((uint8_t *)(&enter_dfu_mode), 1);
+		}
+		/* For a read transaction... */
+		else if(status & MASK_I2CS_STATUS_TX_REQ)
+		{
+			/* Write the byte to the I2C bus... */
+			i2cs_write((uint8_t *)(&enter_dfu_mode), 1);
+		}
+
+		/* For the completion of a transaction... */
+		else if (status & (MASK_I2CS_STATUS_REC_FIN | MASK_I2CS_STATUS_SEND_FIN))
+		{
+		}
 	}
 }
 
@@ -545,11 +574,40 @@ int main(void)
 	);
 
 	BRIDGE_DEBUG_PRINTF("-------------------------------------------------\r\n");
-	BRIDGE_DEBUG_PRINTF("Pi-puck FT903 Firmware v0.9.2\r\n");
+	BRIDGE_DEBUG_PRINTF("Pi-puck FT903 Firmware v1.0.0\r\n");
 	BRIDGE_DEBUG_PRINTF("USB Camera and I2C RGB LED controller\r\n");
 	BRIDGE_DEBUG_PRINTF("Built: %s %s\r\n", __DATE__, __TIME__);
 	BRIDGE_DEBUG_PRINTF("-------------------------------------------------\r\n");
 #endif // BRIDGE_DEBUG
+
+	/* Set up I2C Slave at 0x38 (0x1C) */
+	sys_enable(sys_device_i2c_slave);
+	gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
+	gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
+	gpio_pull(46, pad_pull_none);
+	gpio_pull(47, pad_pull_none);
+	i2cs_init(0x38);
+
+	/* Enable I2C interrupt for DFU enable command (0xFF) */
+	BRIDGE_DEBUG_PRINTF("Waiting 3s for DFU mode enable command (send 0xFF to I2C)\r\n");
+	interrupt_attach(interrupt_i2cs, (uint8_t)interrupt_i2cs, i2cs_dev_ISR_DFU);
+	i2cs_enable_interrupt(MASK_I2CS_FIFO_INT_ENABLE_I2C_INT);
+	interrupt_enable_globally();
+	for (int i = 0; i < 6; i++) {
+		delayms(500);
+		BRIDGE_DEBUG_PRINTF(".");
+		if (enter_dfu_mode == 0xFF) {
+			break;
+		}
+	}
+	interrupt_disable_globally();
+	i2cs_disable_interrupt(MASK_I2CS_FIFO_INT_ENABLE_I2C_INT);
+	interrupt_detach(interrupt_i2cs);
+	if (enter_dfu_mode == 0xFF) {
+		BRIDGE_DEBUG_PRINTF("\r\nDFU enable command received. Entering DFU mode...\r\n");
+		STARTUP_DFU(0);
+	}
+	BRIDGE_DEBUG_PRINTF("\r\nNo DFU enable command received. Continuing...\r\n");
 
 	/* Timer A = 1ms */
 	timer_prescaler(1000);
@@ -587,26 +645,10 @@ int main(void)
 	gpio_interrupt_enable(8, gpio_int_edge_falling); /* VD */
 	interrupt_attach(interrupt_gpio, (uint8_t)interrupt_gpio, vsync_ISR);
 
-	/* Set up I2C */
-	sys_enable(sys_device_i2c_slave);
-
-	gpio_function(46, pad_i2c1_scl); /* I2C1_SCL */
-	gpio_function(47, pad_i2c1_sda); /* I2C1_SDA */
-    gpio_pull(46, pad_pull_none);
-    gpio_pull(47, pad_pull_none);
-
-	/* Initialise the I2C Slave hardware... */
-	i2cs_init(0x38);
-	/* Set up the handler for i2cs_dev... */
-	i2cs_dev_buffer = i2cs_dev_registers;
-	i2cs_dev_buffer_size = 3;
-	i2cs_enable_interrupt(MASK_I2CS_FIFO_INT_ENABLE_I2C_INT);
-	interrupt_attach(interrupt_i2cs, (uint8_t)interrupt_i2cs, i2cs_dev_ISR);
-
-	// Set up GPIOs for RGB LEDs
-	// LED1: R=GPIO55, G=GPIO29, B=GPIO45
-	// LED2: R=GPIO56, G=GPIO57, B=GPIO58
-	// LED3: R=GPIO52, G=GPIO53, B=GPIO54
+	/* Set up GPIOs for RGB LEDs */
+	/* LED1: R=GPIO55, G=GPIO29, B=GPIO45 */
+	/* LED2: R=GPIO56, G=GPIO57, B=GPIO58 */
+	/* LED3: R=GPIO52, G=GPIO53, B=GPIO54 */
 	gpio_function(55, pad_gpio55);
 	gpio_function(29, pad_gpio29);
 	gpio_function(45, pad_gpio45);
@@ -634,8 +676,13 @@ int main(void)
 	gpio_write(52, 1);
 	gpio_write(53, 1);
 	gpio_write(54, 1);
-
 	update_leds();
+
+	/* Set up main interrupt handler for i2cs_dev */
+	i2cs_dev_buffer = i2cs_dev_registers;
+	i2cs_dev_buffer_size = 3;
+	interrupt_attach(interrupt_i2cs, (uint8_t)interrupt_i2cs, i2cs_dev_ISR);
+	i2cs_enable_interrupt(MASK_I2CS_FIFO_INT_ENABLE_I2C_INT);
 
 	// Initialise the camera hardware.
 	module = camera_init();
